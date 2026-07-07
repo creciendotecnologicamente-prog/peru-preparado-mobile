@@ -1,5 +1,15 @@
-import { View, Text, Pressable, Switch, StyleSheet } from "react-native";
+import { useEffect } from "react";
+import { View, Text, Switch, StyleSheet } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { Icon } from "../components/Icon";
+import { PressableScale } from "../components/PressableScale";
 import { C } from "../theme";
 import { haversineKm } from "../lib/geo";
 import type { Quake } from "../lib/usgs";
@@ -21,13 +31,16 @@ export function Inicio({
   const u = sismos[0];
   return (
     <View>
-      <Pressable style={s.eew} onPress={onSimular}>
-        <Icon name="zap" size={28} color="#fff" />
+      <PressableScale style={s.eew} onPress={onSimular} haptic="medium">
+        <View style={s.eewIconWrap}>
+          <PulseHalo />
+          <Icon name="zap" size={26} color="#fff" />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={s.eewT}>Alerta Sísmica Temprana</Text>
           <Text style={s.eewS}>Recibe el aviso ANTES del remezón · toca para simular</Text>
         </View>
-      </Pressable>
+      </PressableScale>
 
       <View style={s.card}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 11 }}>
@@ -89,6 +102,19 @@ export function Inicio({
   );
 }
 
+/** Anillo pulsante detrás del ícono del banner EEW: da sensación de "en vivo". */
+function PulseHalo() {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withRepeat(withSequence(withTiming(1, { duration: 1400, easing: Easing.out(Easing.quad) })), -1, false);
+  }, []);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.55 * (1 - t.value),
+    transform: [{ scale: 1 + t.value * 0.9 }],
+  }));
+  return <Animated.View pointerEvents="none" style={[s.halo, style]} />;
+}
+
 function Meta({ k, v, wide }: { k: string; v: string; wide?: boolean }) {
   return (
     <View style={{ width: wide ? "100%" : "48%" }}>
@@ -99,15 +125,17 @@ function Meta({ k, v, wide }: { k: string; v: string; wide?: boolean }) {
 }
 function Tile({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   return (
-    <Pressable style={s.tile} onPress={onPress}>
+    <PressableScale style={s.tile} onPress={onPress}>
       <Icon name={icon} size={26} color={C.ink2} />
       <Text style={s.tileL}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const s = StyleSheet.create({
   eew: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.rojo, borderRadius: 14, padding: 14, marginBottom: 14 },
+  eewIconWrap: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
+  halo: { position: "absolute", width: 26, height: 26, borderRadius: 13, backgroundColor: "#fff" },
   eewT: { color: "#fff", fontWeight: "800", fontSize: 15 },
   eewS: { color: "#fff", opacity: 0.92, fontSize: 11.5, marginTop: 1 },
   card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },

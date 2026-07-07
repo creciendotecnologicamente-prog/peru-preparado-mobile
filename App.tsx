@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, ScrollView, StatusBar, Platform, Alert, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, RefreshControl, StatusBar, Platform, Alert, StyleSheet } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
 import { Icon } from "./src/components/Icon";
@@ -13,12 +13,22 @@ import { Onboarding } from "./src/components/Onboarding";
 import { loadProfile, saveProfile, type Profile } from "./src/lib/profile";
 import { loadServer, enviarReporte } from "./src/lib/server";
 import { registerForPushNotifications } from "./src/lib/notifications";
+import { ToastProvider, useToast } from "./src/components/Toast";
 import { C } from "./src/theme";
 
 type View2 = "inicio" | "prevencion" | "informacion" | "comunicar";
 const LIMA = { lat: -12.05, lon: -77.04 };
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
+  );
+}
+
+function AppInner() {
+  const toast = useToast();
   const [view, setView] = useState<View2>("inicio");
   const [sismos, setSismos] = useState<Quake[]>([]);
   const [user, setUser] = useState(LIMA);
@@ -46,6 +56,8 @@ export default function App() {
     );
   }
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const cargar = useCallback(async () => {
     try {
       const data = await fetchSismos();
@@ -57,6 +69,12 @@ export default function App() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await cargar();
+    setRefreshing(false);
+  }
 
   useEffect(() => {
     if (!monitor) return;
@@ -103,7 +121,7 @@ export default function App() {
         nombre: profile?.nombre || undefined,
         ...(profile?.dni && /^\d{8}$/.test(profile.dni) ? { dni: profile.dni } : {}),
       });
-      Alert.alert("Estoy a salvo", "Tu aviso quedó registrado en el servidor. ¡Gracias!");
+      toast("success", "Tu aviso “estoy a salvo” quedó registrado. ¡Gracias!");
     } catch {
       Alert.alert("Sin conexión", "No se pudo avisar al servidor. Usa la Red Malla (pestaña Comunicar) para avisar sin internet.");
     }
@@ -161,7 +179,11 @@ export default function App() {
       </View>
 
       {/* Contenido */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15, paddingBottom: 30 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 15, paddingBottom: 30 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.rojo} colors={[C.rojo]} />}
+      >
         {view === "inicio" && (
           <Inicio
             sismos={sismos}

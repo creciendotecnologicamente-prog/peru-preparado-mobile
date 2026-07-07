@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "../components/Icon";
 import { FamilySync } from "../components/FamilySync";
+import { PressableScale } from "../components/PressableScale";
+import { ProgressRing } from "../components/ProgressRing";
 import { C } from "../theme";
 import { type Profile, preparedness, nivelPreparacion } from "../lib/profile";
 import { loadFamily } from "../lib/family";
@@ -49,16 +51,16 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
         <>
           <Text style={s.sec}>Mi preparación</Text>
           <View style={s.scoreCard}>
-            <View style={[s.ring, { borderColor: nivel.color }]}>
+            <ProgressRing pct={pct} size={64} strokeWidth={6} color={nivel.color}>
               <Text style={[s.ringN, { color: nivel.color }]}>{pct}%</Text>
-            </View>
+            </ProgressRing>
             <View style={{ flex: 1 }}>
               <Text style={[s.nivel, { color: nivel.color }]}>{nivel.label}</Text>
               <Text style={s.nivelHint}>Según tu Test de Conocimiento</Text>
-              <Pressable style={s.editBtn} onPress={onEdit}>
+              <PressableScale style={s.editBtn} onPress={onEdit}>
                 <Icon name="check" size={14} color={C.rojo} />
                 <Text style={s.editT}>Editar mi ficha</Text>
-              </Pressable>
+              </PressableScale>
             </View>
           </View>
 
@@ -83,10 +85,10 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
               <Icon name="broadcast" size={15} color={C.azul} />
               <Text style={s.btT}>Tu familia te reconoce con esta ficha. Sincronízala por QR, sin internet.</Text>
             </View>
-            <Pressable style={s.syncBtn} onPress={() => setSync(true)}>
+            <PressableScale style={s.syncBtn} onPress={() => setSync(true)} haptic="medium">
               <Icon name="users" size={17} color="#fff" />
               <Text style={s.syncT}>Sincronizar con mi familia{famCount ? ` · ${famCount}` : ""}</Text>
-            </Pressable>
+            </PressableScale>
           </View>
         </>
       )}
@@ -102,9 +104,9 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
         </View>
         <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
           {["antes", "durante", "despues"].map((f) => (
-            <Pressable key={f} style={[s.gtab, fase === f && s.gtabOn]} onPress={() => setFase(f)}>
+            <PressableScale key={f} style={[s.gtab, fase === f && s.gtabOn]} onPress={() => setFase(f)}>
               <Text style={[s.gtabT, fase === f && { color: "#fff" }]}>{f[0].toUpperCase() + f.slice(1)}</Text>
-            </Pressable>
+            </PressableScale>
           ))}
         </View>
         {GUIA[fase].map((x, i) => (
@@ -122,20 +124,24 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
 function Lista({ titulo, icon, items, prefix, done, toggle }: { titulo: string; icon: string; items: string[]; prefix: string; done: Record<string, boolean>; toggle: (id: string) => void }) {
   const total = items.length;
   const d = items.filter((_, i) => done[prefix + i]).length;
+  const pct = Math.round((d / total) * 100);
   return (
     <View style={s.card}>
       <View style={s.ah}>
         <Icon name={icon} size={19} color={C.ink2} />
         <Text style={s.ahT}>{titulo}</Text>
-        <Text style={s.pct}>{Math.round((d / total) * 100)}%</Text>
+        <Text style={s.pct}>{pct}%</Text>
+      </View>
+      <View style={s.bar}>
+        <View style={[s.barFill, { width: `${pct}%` }]} />
       </View>
       {items.map((it, i) => {
         const on = !!done[prefix + i];
         return (
-          <Pressable key={i} style={s.chk} onPress={() => toggle(prefix + i)}>
+          <PressableScale key={i} style={s.chk} onPress={() => toggle(prefix + i)} haptic={on ? "light" : "success"}>
             <View style={[s.box, on && s.boxOn]}>{on && <Icon name="check" size={13} color="#fff" />}</View>
             <Text style={[s.chkT, on && { textDecorationLine: "line-through", color: C.muted }]}>{it}</Text>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -154,7 +160,6 @@ function FRow({ k, v }: { k: string; v: string }) {
 const s = StyleSheet.create({
   sec: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.7, color: C.muted, marginTop: 8, marginBottom: 10 },
   scoreCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },
-  ring: { width: 64, height: 64, borderRadius: 32, borderWidth: 5, alignItems: "center", justifyContent: "center" },
   ringN: { fontSize: 17, fontWeight: "900" },
   nivel: { fontSize: 16, fontWeight: "800" },
   nivelHint: { fontSize: 12, color: C.muted, marginTop: 1 },
@@ -176,6 +181,8 @@ const s = StyleSheet.create({
   ah: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
   ahT: { fontWeight: "700", fontSize: 14, color: C.ink },
   pct: { marginLeft: "auto", fontWeight: "800", color: C.verde, fontSize: 12 },
+  bar: { height: 5, borderRadius: 3, backgroundColor: C.line, overflow: "hidden", marginBottom: 8 },
+  barFill: { height: "100%", borderRadius: 3, backgroundColor: C.verde },
   chk: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   box: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: C.line, alignItems: "center", justifyContent: "center" },
   boxOn: { backgroundColor: C.verde, borderColor: C.verde },

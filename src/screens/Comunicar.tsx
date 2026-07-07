@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, TextInput, Alert, Modal, ScrollView, StyleSheet } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Icon } from "../components/Icon";
+import { PressableScale } from "../components/PressableScale";
 import { RedMalla } from "../components/RedMalla";
+import { useToast } from "../components/Toast";
 import { C } from "../theme";
 import type { Profile } from "../lib/profile";
 import {
@@ -18,6 +21,7 @@ import {
 const dniValido = (d?: string) => !!d && /^\d{8}$/.test(d);
 
 export function Comunicar({ profile }: { profile?: Profile | null }) {
+  const toast = useToast();
   const [server, setServer] = useState("");
   const [ubic, setUbic] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -74,9 +78,11 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         nombre: profile?.nombre || undefined,
         ...(dniValido(profile?.dni) ? { dni: profile!.dni } : {}),
       });
-      Alert.alert("Reporte enviado", "Tu reporte quedó registrado en el servidor del COE.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast("success", "Reporte enviado al COE.");
       setUbic("");
     } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("No se pudo enviar", `${e?.message ?? "Error"}. Verifica el servidor (Red Malla → Sala) o usa la malla si no hay internet.`);
     } finally {
       setEnviando(false);
@@ -91,8 +97,10 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         nombre: profile?.nombre || undefined,
         ...(dniValido(profile?.dni) ? { dni: profile!.dni } : {}),
       });
-      Alert.alert("Aviso registrado", "Tu “estoy a salvo” quedó registrado en el servidor. Envíalo también por la Red Malla para que llegue a tu familia sin internet.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast("success", "Tu “estoy a salvo” quedó registrado. Envíalo también por la Red Malla.");
     } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("No se pudo enviar", `${e?.message ?? "Error"}. Sin internet, usa el botón “Estoy a salvo” de la Red Malla.`);
     } finally {
       setEnviando(false);
@@ -107,8 +115,11 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         onPress: async () => {
           try {
             await marcarEncontrado(server, p.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast("success", `${p.nombre} ${p.apellido} marcado(a) como encontrado(a).`);
             buscar(server, q);
           } catch (e: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert("Error", e?.message ?? "No se pudo actualizar");
           }
         },
@@ -122,14 +133,14 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
       <View style={s.card}>
         <Text style={s.label}>Reportar emergencia</Text>
         <TextInput style={s.input} placeholder="Ubicación o referencia" value={ubic} onChangeText={setUbic} placeholderTextColor={C.muted} />
-        <Pressable style={[s.btn, { backgroundColor: C.rojo, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={reportarEmergencia}>
+        <PressableScale style={[s.btn, { backgroundColor: C.rojo, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={reportarEmergencia} haptic="medium">
           <Icon name="alert" size={18} color="#fff" />
           <Text style={s.btnTx}>Enviar reporte al COE</Text>
-        </Pressable>
-        <Pressable style={[s.btn, { backgroundColor: C.verde, marginTop: 9, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={avisarASalvo}>
+        </PressableScale>
+        <PressableScale style={[s.btn, { backgroundColor: C.verde, marginTop: 9, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={avisarASalvo} haptic="medium">
           <Icon name="check" size={18} color="#fff" />
           <Text style={s.btnTx}>Avisar “Estoy a salvo”</Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       <Text style={s.sec}>Buscar personas</Text>
@@ -164,10 +175,10 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
             </View>
           ))
         )}
-        <Pressable style={[s.btn, { backgroundColor: C.azul, marginTop: 11 }]} onPress={() => setFormVisible(true)}>
+        <PressableScale style={[s.btn, { backgroundColor: C.azul, marginTop: 11 }]} onPress={() => setFormVisible(true)}>
           <Icon name="search" size={17} color="#fff" />
           <Text style={s.btnTx}>Reportar persona desaparecida</Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       <Text style={s.sec}>Red Malla (sin internet)</Text>
@@ -197,6 +208,7 @@ function FormPersona({
   profile?: Profile | null;
   onCreada: () => void;
 }) {
+  const toast = useToast();
   const [f, setF] = useState<PersonaNueva>({
     nombre: "", apellido: "", dni: "", region: profile?.region && REGIONES.includes(profile.region) ? profile.region : "Lima",
     lugar: "", desc: "", rep: profile?.nombre ?? "", tel: profile?.contactoTel ?? "",
@@ -212,9 +224,11 @@ function FormPersona({
     setEnviando(true);
     try {
       await crearPersona(server, { ...f, desc: f.desc?.trim() || undefined });
-      Alert.alert("Reporte creado", "La persona quedó registrada como BUSCADA. Comparte su nombre por la Red Malla para ampliar la búsqueda.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast("success", "Persona registrada como BUSCADA. Compártelo por la Red Malla.");
       onCreada();
     } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("No se pudo crear", e?.message ?? "Error de conexión con el servidor.");
     } finally {
       setEnviando(false);
@@ -238,9 +252,9 @@ function FormPersona({
           <Text style={m.label}>Región *</Text>
           <View style={m.chips}>
             {REGIONES.map((r) => (
-              <Pressable key={r} style={[m.chip, f.region === r && m.chipOn]} onPress={() => setF((x) => ({ ...x, region: r }))}>
+              <PressableScale key={r} style={[m.chip, f.region === r && m.chipOn]} onPress={() => setF((x) => ({ ...x, region: r }))}>
                 <Text style={[m.chipT, f.region === r && { color: "#fff" }]}>{r}</Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
 
@@ -249,10 +263,10 @@ function FormPersona({
           <Campo label="Tu nombre (reportante) *" value={f.rep} onChange={set("rep")} placeholder="Quién reporta" />
           <Campo label="Tu teléfono *" value={f.tel} onChange={set("tel")} placeholder="Para recibir avisos" keyboardType="phone-pad" />
 
-          <Pressable style={[m.send, { opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={enviar}>
+          <PressableScale style={[m.send, { opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={enviar} haptic="medium">
             <Icon name="alert" size={17} color="#fff" />
             <Text style={m.sendT}>{enviando ? "Enviando…" : "Registrar como BUSCADA"}</Text>
-          </Pressable>
+          </PressableScale>
         </ScrollView>
       </View>
     </Modal>
