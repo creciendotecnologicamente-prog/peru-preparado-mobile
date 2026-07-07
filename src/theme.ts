@@ -1,0 +1,20 @@
+/** Paleta gob.pe / IGP para la app nativa. */
+export const C = {
+  rojo: "#D52B1E",
+  rojoD: "#b21f14",
+  rojoSoft: "#fdeceb",
+  slate: "#16202b",
+  bg: "#eef0f3",
+  surface: "#ffffff",
+  surface2: "#f6f7f9",
+  ink: "#1a1a1a",
+  ink2: "#3d3d3d",
+  muted: "#6b6b6b",
+  line: "#e4e4e6",
+  verde: "#1b8a4b",
+  verdeSoft: "#e8f5ee",
+  azul: "#0056ac",
+  azulSoft: "#eaf2fb",
+  ambar: "#b07700",
+  ambarSoft: "#fff6e0",
+};

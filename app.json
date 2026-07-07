@@ -1,13 +1,31 @@
 {
   "expo": {
-    "name": "peru-preparado-mobile",
+    "name": "Perú Preparado",
     "slug": "peru-preparado-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Perú Preparado usa tu ubicación para calcular los segundos de aviso antes de que llegue el remezón."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Perú Preparado usa la cámara para escanear el código QR de tu familia y sincronizar sus fichas."
+        }
+      ]
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Perú Preparado usa tu ubicación para calcular los segundos de aviso antes de que llegue el remezón.",
+        "NSCameraUsageDescription": "Perú Preparado usa la cámara para escanear el código QR de tu familia y sincronizar sus fichas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +37,9 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
     }
   }
 }
