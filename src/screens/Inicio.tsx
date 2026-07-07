@@ -11,6 +11,7 @@ import Animated, {
 import { Icon } from "../components/Icon";
 import { PressableScale } from "../components/PressableScale";
 import { Section } from "../components/Section";
+import { IdeaGrowCredit } from "../components/IdeaGrow";
 import { C } from "../theme";
 import { haversineKm } from "../lib/geo";
 import type { Quake } from "../lib/usgs";
@@ -114,6 +115,8 @@ export function Inicio({
           ))
         )}
       </View>
+
+      <IdeaGrowCredit />
     </View>
   );
 }

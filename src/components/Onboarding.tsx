@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Switch, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Icon } from "./Icon";
+import { IdeaGrowCredit } from "./IdeaGrow";
 import { C } from "../theme";
 import { type Profile, emptyProfile, preparedness } from "../lib/profile";
 
@@ -59,6 +60,7 @@ export function Onboarding({ initial, onFinish, onClose }: { initial?: Profile; 
               <Icon name="check" size={15} color={C.verde} />
               <Text style={st.privT}>Tus datos se guardan solo en tu teléfono.</Text>
             </View>
+            <IdeaGrowCredit width={120} />
           </View>
         )}
 
