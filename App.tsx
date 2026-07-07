@@ -14,6 +14,7 @@ import { loadProfile, saveProfile, type Profile } from "./src/lib/profile";
 import { loadServer, enviarReporte } from "./src/lib/server";
 import { registerForPushNotifications } from "./src/lib/notifications";
 import { ToastProvider, useToast } from "./src/components/Toast";
+import { PressableScale } from "./src/components/PressableScale";
 import { C } from "./src/theme";
 
 type View2 = "inicio" | "prevencion" | "informacion" | "comunicar";
@@ -199,7 +200,7 @@ function AppInner() {
           />
         )}
         {view === "prevencion" && <Prevencion profile={profile} onEdit={() => setEditing(true)} />}
-        {view === "informacion" && <Informacion sismos={sismos} />}
+        {view === "informacion" && <Informacion sismos={sismos} user={user} />}
         {view === "comunicar" && <Comunicar profile={profile} />}
       </ScrollView>
 
@@ -211,10 +212,10 @@ function AppInner() {
           ["informacion", "broadcast", "Info"],
           ["comunicar", "message", "Comunicar"],
         ] as [View2, string, string][]).map(([v, ic, lbl]) => (
-          <Pressable key={v} style={st.tab} onPress={() => setView(v)}>
+          <PressableScale key={v} style={st.tab} onPress={() => setView(v)}>
             <Icon name={ic} size={22} color={view === v ? C.rojo : C.muted} />
             <Text style={[st.tabT, { color: view === v ? C.rojo : C.muted }]}>{lbl}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </View>
 

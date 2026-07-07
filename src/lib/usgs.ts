@@ -1,4 +1,6 @@
+import { Platform } from "react-native";
 import { haversineKm } from "./geo";
+import { loadServer } from "./server";
 
 export interface Quake {
   id: string;
@@ -19,6 +21,20 @@ export interface Quake {
  * Si una fuente falla, la otra sigue sirviendo datos.
  */
 export async function fetchSismos(): Promise<Quake[]> {
+  // En web el navegador bloquea la API del IGP (CORS): pedimos los sismos a
+  // nuestro servidor, que ya combina IGP+USGS del lado del servidor. En
+  // nativo vamos directo a las fuentes (más resiliente si el server cae).
+  if (Platform.OS === "web") {
+    try {
+      return await fetchViaServer();
+    } catch {
+      // Respaldo: USGS sí permite CORS desde el navegador.
+      const b = await fetchUsgs();
+      if (b.length === 0) throw new Error("Sin datos");
+      return b.sort((x, y) => y.time - x.time).slice(0, 30);
+    }
+  }
+
   const [igp, usgs] = await Promise.allSettled([fetchIgp(), fetchUsgs()]);
   const a = igp.status === "fulfilled" ? igp.value : [];
   const b = usgs.status === "fulfilled" ? usgs.value : [];
@@ -32,6 +48,16 @@ export async function fetchSismos(): Promise<Quake[]> {
     if (!dup) merged.push(q);
   }
   return merged.sort((x, y) => y.time - x.time).slice(0, 30);
+}
+
+async function fetchViaServer(): Promise<Quake[]> {
+  const base = await loadServer();
+  const res = await fetch(`${base}/api/sismos`);
+  if (!res.ok) throw new Error("server " + res.status);
+  const json = await res.json();
+  const data = (json.data ?? []) as Quake[];
+  if (data.length === 0) throw new Error("server sin datos");
+  return data;
 }
 
 export async function fetchUsgs(): Promise<Quake[]> {
