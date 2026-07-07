@@ -8,15 +8,20 @@ import Constants from "expo-constants";
  */
 export const SERVER_KEY = "pp_mesh_server";
 
-/** En desarrollo apunta a la máquina que sirve Metro (puerto 3000). */
+/** Servidor de producción real (Fly.io, Sao Paulo). */
+export const PRODUCTION_SERVER = "https://peru-te-busca.fly.dev";
+
+/**
+ * Por defecto:
+ *  - En desarrollo (Expo Go/dev client con Metro): la máquina que sirve
+ *    Metro, puerto 3000 — para probar contra un `next dev` local.
+ *  - En cualquier otro caso (build de producción, web publicada): el
+ *    servidor real desplegado.
+ */
 export function defaultServer(): string {
   const host = Constants.expoConfig?.hostUri?.split(":")[0];
-  if (host) return `http://${host}:3000`;
-  // Build web: hostUri no existe; se asume el mismo host que sirve la app.
-  if (typeof window !== "undefined" && window.location?.hostname) {
-    return `${window.location.protocol}//${window.location.hostname}:3000`;
-  }
-  return "";
+  if (__DEV__ && host) return `http://${host}:3000`;
+  return PRODUCTION_SERVER;
 }
 
 export async function loadServer(): Promise<string> {
