@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Modal, View, Text, Pressable, TextInput, ScrollView, Alert, Platform, StyleSheet } from "react-native";
+import { Modal, View, Text, Pressable, TextInput, ScrollView, Alert, Platform, Linking, StyleSheet } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Icon } from "./Icon";
@@ -7,6 +7,7 @@ import { C } from "../theme";
 import type { Profile } from "../lib/profile";
 import { loadFamily, type FamilyMember } from "../lib/family";
 import { defaultServer } from "../lib/server";
+import { ubicacionRapida, mapsUrl } from "../lib/ubicacion";
 import {
   MeshNode,
   BroadcastTransport,
@@ -76,11 +77,14 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
     if (nodeRef.current) nodeRef.current.name = v;
   }
 
-  function enviar(t: string, kind = "texto") {
+  async function enviar(t: string, kind = "texto") {
     if (!t.trim() || !nodeRef.current) return;
-    // safe/sos viajan con tu DNI para que tu familia te reconozca por su ficha.
-    const conDni = kind === "safe" || kind === "sos" ? profile?.dni || undefined : undefined;
-    nodeRef.current.send(t, kind, conDni);
+    // safe/sos viajan con tu DNI (tu familia te reconoce por su ficha) y con
+    // tu ubicación real si el GPS responde — nunca con una posición inventada.
+    const esEstado = kind === "safe" || kind === "sos";
+    const conDni = esEstado ? profile?.dni || undefined : undefined;
+    const coords = esEstado ? await ubicacionRapida() : null;
+    nodeRef.current.send(t, kind, { dni: conDni, ...(coords ?? {}) });
   }
   function enviarInput() {
     if (!text.trim()) return;
@@ -200,6 +204,11 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
                   </Text>
                 </View>
                 <Text style={s.msgText}>{m.text}</Text>
+                {Number.isFinite(m.lat) && Number.isFinite(m.lon) && (
+                  <Pressable onPress={() => Linking.openURL(mapsUrl(m.lat!, m.lon!))} hitSlop={6}>
+                    <Text style={s.verUbic}>📍 Ver ubicación en el mapa</Text>
+                  </Pressable>
+                )}
               </View>
             ))
           )}
@@ -227,6 +236,11 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
                   <Text style={s.famName}>{m.nombre || "Sin nombre"}</Text>
                   <Text style={[s.famEstado, { color }]}>{estado}</Text>
                 </View>
+                {ult && Number.isFinite(ult.lat) && Number.isFinite(ult.lon) && (
+                  <Pressable style={s.famUbic} onPress={() => Linking.openURL(mapsUrl(ult.lat!, ult.lon!))} hitSlop={6}>
+                    <Text style={s.famUbicT}>📍 Ver ubicación</Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}
@@ -460,6 +474,9 @@ const s = StyleSheet.create({
   famDot: { width: 10, height: 10, borderRadius: 5 },
   famName: { fontWeight: "700", fontSize: 13.5, color: C.ink },
   famEstado: { fontSize: 11.5, fontWeight: "600", marginTop: 1 },
+  famUbic: { backgroundColor: C.azulSoft, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 9 },
+  famUbicT: { fontSize: 10.5, fontWeight: "800", color: C.azul },
+  verUbic: { fontSize: 12, fontWeight: "800", color: C.azul, marginTop: 5 },
   note: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.ambarSoft, borderRadius: 9, padding: 10, marginBottom: 12 },
   noteT: { flex: 1, fontSize: 11, color: C.ambar, fontWeight: "600", lineHeight: 15 },
   hint: { fontSize: 11.5, color: C.muted },

@@ -41,6 +41,9 @@ export type Packet =
       ts: number;
       /** DNI del emisor (opcional): permite que la familia lo reconozca. */
       dni?: string;
+      /** Ubicación del emisor (opcional, solo en safe/sos con GPS real). */
+      lat?: number;
+      lon?: number;
     };
 
 type MsgPacket = Extract<Packet, { t: "msg" }>;
@@ -56,6 +59,8 @@ export interface MeshMessage {
   ts: number;
   mine: boolean;
   dni?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface Transport {
@@ -66,7 +71,7 @@ export interface Transport {
 }
 
 function toMsg(p: MsgPacket, mine: boolean): MeshMessage {
-  return { id: p.id, fromId: p.fromId, fromName: p.fromName, text: p.text, kind: p.kind, hops: p.hops, ttl: p.ttl, ts: p.ts, mine, dni: p.dni };
+  return { id: p.id, fromId: p.fromId, fromName: p.fromName, text: p.text, kind: p.kind, hops: p.hops, ttl: p.ttl, ts: p.ts, mine, dni: p.dni, lat: p.lat, lon: p.lon };
 }
 
 // ---------- Transporte local (solo build web de Expo) ----------
@@ -162,6 +167,7 @@ export function encodeMeshQR(messages: MeshMessage[]): string {
     l: m.ttl,
     s: m.ts,
     ...(m.dni ? { d: m.dni } : {}),
+    ...(Number.isFinite(m.lat) && Number.isFinite(m.lon) ? { a: m.lat, o: m.lon } : {}),
   }));
   return QR_PREFIX + JSON.stringify(pk);
 }
@@ -185,6 +191,7 @@ export function decodeMeshQR(raw: string): MsgPacket[] | null {
         ttl: Math.max(0, Number(o.l) || 0),
         ts: Number(o.s) || Date.now(),
         ...(o.d ? { dni: String(o.d) } : {}),
+        ...(Number.isFinite(Number(o.a)) && Number.isFinite(Number(o.o)) ? { lat: Number(o.a), lon: Number(o.o) } : {}),
       }));
   } catch {
     return null;
@@ -243,7 +250,7 @@ export class MeshNode {
     this.onChange?.();
   }
 
-  send(text: string, kind = "texto", dni?: string) {
+  send(text: string, kind = "texto", extra?: { dni?: string; lat?: number; lon?: number }) {
     if (!text.trim()) return;
     const m: MsgPacket = {
       t: "msg",
@@ -255,7 +262,8 @@ export class MeshNode {
       hops: 0,
       ttl: 6,
       ts: Date.now(),
-      ...(dni ? { dni } : {}),
+      ...(extra?.dni ? { dni: extra.dni } : {}),
+      ...(Number.isFinite(extra?.lat) && Number.isFinite(extra?.lon) ? { lat: extra!.lat, lon: extra!.lon } : {}),
     };
     this.seen.set(m.id, Date.now());
     this.messages.unshift(toMsg(m, true));

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, ScrollView, RefreshControl, StatusBar, Platform, Alert, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, RefreshControl, StatusBar, Platform, Alert, Linking, Share, StyleSheet } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
 import { Icon } from "./src/components/Icon";
@@ -13,6 +13,7 @@ import { Onboarding } from "./src/components/Onboarding";
 import { loadProfile, saveProfile, type Profile } from "./src/lib/profile";
 import { loadServer, enviarReporte } from "./src/lib/server";
 import { registerForPushNotifications } from "./src/lib/notifications";
+import { ubicacionRapida, mapsUrl } from "./src/lib/ubicacion";
 import { ToastProvider, useToast } from "./src/components/Toast";
 import { PressableScale } from "./src/components/PressableScale";
 import { C } from "./src/theme";
@@ -131,6 +132,46 @@ function AppInner() {
     setView("comunicar");
   }
 
+  /**
+   * Tras el remezón: avisa a la familia con la ubicación real por los canales
+   * disponibles — SMS al contacto de emergencia (suele sobrevivir cuando los
+   * datos móviles colapsan) y reporte al servidor. Si no hay GPS real, el
+   * mensaje va SIN ubicación (nunca una posición por defecto).
+   */
+  async function avisarFamilia() {
+    const ev = eewEvent;
+    const coords = await ubicacionRapida();
+    const ubicTxt = coords ? ` Mi ubicación: ${mapsUrl(coords.lat, coords.lon)}` : "";
+    const sismoTxt = ev ? ` tras el sismo M ${ev.mag} (${ev.place})` : " tras el sismo";
+    const msg = `Estoy a salvo${sismoTxt}.${ubicTxt} — enviado desde Perú Preparado`;
+
+    // 1) Reporte al servidor (si hay internet); no bloquea el SMS.
+    loadServer()
+      .then((base) =>
+        enviarReporte(base, {
+          tipo: "a-salvo",
+          nombre: profile?.nombre || undefined,
+          ...(profile?.dni && /^\d{8}$/.test(profile.dni) ? { dni: profile.dni } : {}),
+          ...(coords ? { ubicacion: `${coords.lat.toFixed(5)},${coords.lon.toFixed(5)}` } : {}),
+        }),
+      )
+      .catch(() => {});
+
+    // 2) SMS al contacto de emergencia; sin contacto (o en web), hoja de compartir.
+    const tel = profile?.contactoTel?.replace(/[^\d+]/g, "") ?? "";
+    try {
+      if (tel.length >= 6 && Platform.OS !== "web") {
+        const sep = Platform.OS === "ios" ? "&" : "?";
+        await Linking.openURL(`sms:${tel}${sep}body=${encodeURIComponent(msg)}`);
+      } else {
+        await Share.share({ message: msg });
+      }
+      toast("success", coords ? "Mensaje listo con tu ubicación adjunta." : "Mensaje listo (sin GPS disponible).");
+    } catch {
+      toast("error", "No se pudo abrir mensajes. Usa la Red Malla para avisar.");
+    }
+  }
+
   async function usarUbicacion() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -219,7 +260,7 @@ function AppInner() {
         ))}
       </View>
 
-      <Eew event={eewEvent} user={user} onClose={() => setEewEvent(null)} />
+      <Eew event={eewEvent} user={user} onClose={() => setEewEvent(null)} onAvisar={avisarFamilia} />
     </View>
   );
 }

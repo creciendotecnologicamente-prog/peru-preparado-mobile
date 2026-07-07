@@ -21,7 +21,18 @@ type Fase = "aviso" | "remezon" | "fin";
  * la onda S y avisa ANTES del remezón, con vibración háptica intensa y voz.
  * (Una alarma sonora con archivo de audio se añadirá con expo-audio.)
  */
-export function Eew({ event, user, onClose }: { event: EewEvent | null; user: { lat: number; lon: number }; onClose: () => void }) {
+export function Eew({
+  event,
+  user,
+  onClose,
+  onAvisar,
+}: {
+  event: EewEvent | null;
+  user: { lat: number; lon: number };
+  onClose: () => void;
+  /** Avisar a la familia con mi ubicación (SMS + servidor). Se muestra al terminar el remezón. */
+  onAvisar?: () => void | Promise<void>;
+}) {
   const [fase, setFase] = useState<Fase>("aviso");
   const [secs, setSecs] = useState(0);
   const [dist, setDist] = useState(0);
@@ -130,6 +141,20 @@ export function Eew({ event, user, onClose }: { event: EewEvent | null; user: { 
             <Icon name="check" size={110} color="#fff" />
             <Text style={s.instr}>Evacúa con calma{"\n"}a la zona segura exterior</Text>
             <Text style={s.ctx}>¿Te encuentras bien?</Text>
+            {onAvisar && (
+              <Pressable
+                style={s.avisar}
+                onPress={async () => {
+                  try {
+                    await onAvisar();
+                  } catch {}
+                  close();
+                }}
+              >
+                <Icon name="pin" size={19} color="#fff" />
+                <Text style={s.avisarT}>Enviar mi ubicación a mi familia</Text>
+              </Pressable>
+            )}
           </>
         )}
         <Pressable style={s.btn} onPress={close}>
@@ -146,6 +171,8 @@ const s = StyleSheet.create({
   count: { color: "#fff", fontSize: 150, fontWeight: "900", lineHeight: 156, marginVertical: 6 },
   instr: { color: "#fff", fontSize: 24, fontWeight: "800", textAlign: "center", marginTop: 10 },
   ctx: { color: "#fff", fontSize: 13, opacity: 0.85, textAlign: "center", marginTop: 18, maxWidth: 320 },
+  avisar: { flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: "#1b8a4b", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 22, marginTop: 26 },
+  avisarT: { color: "#fff", fontSize: 15, fontWeight: "800" },
   btn: { marginTop: 30, borderWidth: 2, borderColor: "rgba(255,255,255,0.55)", backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 12, paddingVertical: 13, paddingHorizontal: 26 },
   btnTx: { color: "#fff", fontSize: 15, fontWeight: "800" },
 });
