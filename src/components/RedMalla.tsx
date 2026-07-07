@@ -3,6 +3,7 @@ import { Modal, View, Text, Pressable, TextInput, ScrollView, Alert, Platform, L
 import QRCode from "react-native-qrcode-svg";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Icon } from "./Icon";
+import { PressableScale } from "./PressableScale";
 import { C } from "../theme";
 import type { Profile } from "../lib/profile";
 import { loadFamily, type FamilyMember } from "../lib/family";
@@ -39,6 +40,7 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
   const [salaOn, setSalaOn] = useState(false);
   const [salaOk, setSalaOk] = useState(false);
   const [qrVisible, setQrVisible] = useState(false);
+  const [avanzado, setAvanzado] = useState(false);
 
   useEffect(() => {
     loadFamily().then(setFamily);
@@ -63,13 +65,27 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
       if (BroadcastTransport.disponible()) node.addTransport(new BroadcastTransport());
       node.start();
       nodeRef.current = node;
+      // Conexión AUTOMÁTICA al canal de emergencia: nadie tiene que
+      // configurar nada. Si hay internet, los mensajes llegan a todo el
+      // canal (app y web); si no hay, siguen viajando por QR.
+      if (st.server) conectar(node, st.server, st.room || "PERU");
       setListo(true);
     });
     return () => {
       node?.stop();
       nodeRef.current = null;
+      relayRef.current = null;
     };
   }, []);
+
+  function conectar(node: MeshNode, base: string, code: string) {
+    if (relayRef.current) node.removeTransport(relayRef.current);
+    const rt = new RelayTransport(base.replace(/\/$/, ""), code.toUpperCase(), node.id);
+    rt.onStatus = setSalaOk;
+    node.addTransport(rt);
+    relayRef.current = rt;
+    setSalaOn(true);
+  }
 
   function cambiarNombre(v: string) {
     setName(v);
@@ -93,27 +109,22 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
     setText("");
   }
 
-  function conectarSala() {
+  function conectarManual() {
     const node = nodeRef.current;
     if (!node) return;
     const base = server.trim().replace(/\/$/, "");
     if (!base) {
-      Alert.alert("Falta el servidor", "Escribe la URL del servidor Perú Te Busca (p. ej. http://192.168.1.10:3000).");
+      Alert.alert("Falta el servidor", "Escribe la dirección del servidor (p. ej. http://192.168.1.10:3000).");
       return;
     }
     const code = (room.trim() || "PERU").toUpperCase();
     setRoom(code);
     saveMeshRoom(code);
     saveMeshServer(base);
-    if (relayRef.current) node.removeTransport(relayRef.current);
-    const rt = new RelayTransport(base, code, node.id);
-    rt.onStatus = setSalaOk;
-    node.addTransport(rt);
-    relayRef.current = rt;
-    setSalaOn(true);
+    conectar(node, base, code);
   }
 
-  function desconectarSala() {
+  function desconectar() {
     const node = nodeRef.current;
     if (node && relayRef.current) node.removeTransport(relayRef.current);
     relayRef.current = null;
@@ -121,52 +132,51 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
     setSalaOk(false);
   }
 
-  const activa = peers > 0 || (salaOn && salaOk);
-
   if (!listo) {
     return (
       <View style={s.card}>
-        <Text style={s.hint}>Iniciando Red Malla…</Text>
+        <Text style={s.hint}>Preparando el chat de emergencia…</Text>
       </View>
     );
   }
 
+  const enLinea = salaOn && salaOk;
+
   return (
     <View>
       <View style={s.card}>
-        {/* Estado */}
-        <View style={[s.status, { backgroundColor: activa ? C.verdeSoft : C.surface2 }]}>
-          <View style={[s.sdot, { backgroundColor: activa ? C.verde : C.muted }]} />
-          <Text style={[s.statusT, { color: activa ? C.verde : C.muted }]}>
-            {activa ? `Malla activa · ${peers} nodo(s) visible(s)` : "Esperando nodos cercanos…"}
-          </Text>
+        {/* Estado en palabras simples */}
+        <View style={[s.status, { backgroundColor: enLinea ? C.verdeSoft : C.ambarSoft }]}>
+          <View style={[s.sdot, { backgroundColor: enLinea ? C.verde : C.ambar }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.statusT, { color: enLinea ? C.verde : C.ambar }]}>
+              {enLinea ? `En línea · canal ${room}` : "Sin conexión al canal"}
+            </Text>
+            <Text style={s.statusS}>
+              {enLinea
+                ? `Tus mensajes llegan a todos en el canal${peers > 0 ? ` · ${peers} cerca` : ""}`
+                : "Tus mensajes se guardan y pueden viajar por QR de mano en mano"}
+            </Text>
+          </View>
         </View>
 
-        <TextInput
-          style={s.input}
-          value={name}
-          onChangeText={cambiarNombre}
-          placeholder="Nombre de tu dispositivo"
-          placeholderTextColor={C.muted}
-        />
-
-        {/* Botones rápidos */}
+        {/* Botones grandes de estado */}
         <View style={s.qrow}>
-          <Pressable style={[s.qbtn, { backgroundColor: C.verdeSoft }]} onPress={() => enviar("Estoy a salvo", "safe")}>
+          <PressableScale style={[s.qbtn, { backgroundColor: C.verdeSoft }]} onPress={() => enviar("Estoy a salvo", "safe")} haptic="medium">
             <Icon name="check" size={16} color={C.verde} />
             <Text style={[s.qbtnT, { color: C.verde }]}>Estoy a salvo</Text>
-          </Pressable>
-          <Pressable style={[s.qbtn, { backgroundColor: C.rojoSoft }]} onPress={() => enviar("Necesito ayuda", "sos")}>
+          </PressableScale>
+          <PressableScale style={[s.qbtn, { backgroundColor: C.rojoSoft }]} onPress={() => enviar("Necesito ayuda", "sos")} haptic="medium">
             <Icon name="sos" size={16} color={C.rojo} />
             <Text style={[s.qbtnT, { color: C.rojo }]}>Necesito ayuda</Text>
-          </Pressable>
-          <Pressable style={[s.qbtn, { backgroundColor: C.azulSoft }]} onPress={() => setText("Busco a: ")}>
+          </PressableScale>
+          <PressableScale style={[s.qbtn, { backgroundColor: C.azulSoft }]} onPress={() => setText("Busco a: ")}>
             <Icon name="search" size={16} color={C.azul} />
             <Text style={[s.qbtnT, { color: C.azul }]}>Busco a alguien</Text>
-          </Pressable>
+          </PressableScale>
         </View>
 
-        {/* Envío */}
+        {/* Envío de texto libre */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             style={[s.input, { flex: 1, marginBottom: 0 }]}
@@ -177,16 +187,16 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
             onSubmitEditing={enviarInput}
             returnKeyType="send"
           />
-          <Pressable style={s.sendBtn} onPress={enviarInput}>
+          <PressableScale style={s.sendBtn} onPress={enviarInput}>
             <Text style={s.sendT}>Enviar</Text>
-          </Pressable>
+          </PressableScale>
         </View>
 
         {/* Mensajes */}
         <View style={s.msgs}>
           {msgs.length === 0 ? (
             <Text style={[s.hint, { padding: 10 }]}>
-              Sin mensajes. Conéctate a una sala o intercambia un QR con otro teléfono.
+              Aún no hay mensajes. Toca “Estoy a salvo” para mandar el primero.
             </Text>
           ) : (
             msgs.slice(0, 20).map((m) => (
@@ -194,10 +204,8 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
                 <View style={s.msgHead}>
                   {KIND_ICON[m.kind] ? <Icon name={KIND_ICON[m.kind]} size={13} color={KIND_COLOR[m.kind] ?? C.ink2} /> : null}
                   <Text style={s.msgFrom}>{m.mine ? "Tú" : m.fromName}</Text>
-                  {!m.mine && (
-                    <Text style={s.hops}>
-                      vía {m.hops} salto{m.hops === 1 ? "" : "s"}
-                    </Text>
+                  {!m.mine && m.hops > 0 && (
+                    <Text style={s.hops}>reenviado {m.hops} {m.hops === 1 ? "vez" : "veces"}</Text>
                   )}
                   <Text style={s.msgTime}>
                     {new Date(m.ts).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
@@ -220,14 +228,14 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
         <View style={s.card}>
           <View style={s.secRow}>
             <Icon name="users" size={18} color={C.ink2} />
-            <Text style={s.secT}>Mi familia en la malla</Text>
+            <Text style={s.secT}>¿Cómo está mi familia?</Text>
           </View>
           {family.map((m) => {
             // msgs va del más reciente al más antiguo: find = último estado.
             const ult = m.dni ? msgs.find((x) => x.dni === m.dni && (x.kind === "safe" || x.kind === "sos")) : undefined;
             const color = !ult ? C.muted : ult.kind === "safe" ? C.verde : C.rojo;
             const estado = !ult
-              ? "Sin noticias por la malla"
+              ? "Sin noticias todavía"
               : `${ult.kind === "safe" ? "Avisó que está a salvo" : "Pidió ayuda"} · ${new Date(ult.ts).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}`;
             return (
               <View key={m.id} style={s.famRow}>
@@ -245,7 +253,7 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
             );
           })}
           <Text style={[s.hint, { marginTop: 8 }]}>
-            Se reconocen por el DNI de la ficha sincronizada. Los avisos “Estoy a salvo” y “Necesito ayuda” de tu familia aparecen aquí.
+            Cuando alguien de tu familia toque “Estoy a salvo” o “Necesito ayuda”, aparecerá aquí automáticamente.
           </Text>
         </View>
       )}
@@ -254,67 +262,70 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
       <View style={s.card}>
         <View style={s.secRow}>
           <Icon name="qr" size={18} color={C.ink2} />
-          <Text style={s.secT}>Relevo por QR · sin internet</Text>
+          <Text style={s.secT}>¿Sin señal? Pasa tus mensajes por QR</Text>
         </View>
         <Text style={s.body}>
-          Muestra tu QR a otro teléfono o escanea el suyo: los mensajes saltan de mano en mano aunque no haya señal ni internet.
+          Aunque no haya internet ni señal, tus mensajes pueden viajar de teléfono en teléfono con un código QR, como pasar una carta de mano en mano.
         </Text>
-        <Pressable style={[s.btn, { backgroundColor: C.slate, marginTop: 10 }]} onPress={() => setQrVisible(true)}>
+        <PressableScale style={[s.btn, { backgroundColor: C.slate, marginTop: 10 }]} onPress={() => setQrVisible(true)}>
           <Icon name="qr" size={17} color="#fff" />
-          <Text style={s.btnT}>Intercambiar mensajes por QR</Text>
-        </Pressable>
+          <Text style={s.btnT}>Abrir el intercambio por QR</Text>
+        </PressableScale>
       </View>
 
-      {/* Sala vía servidor */}
-      <View style={s.card}>
-        <View style={s.secRow}>
-          <Icon name="wifi" size={18} color={C.ink2} />
-          <Text style={s.secT}>Sala vía servidor</Text>
-          {salaOn && (
-            <Text style={[s.salaBadge, { color: salaOk ? C.verde : C.ambar, backgroundColor: salaOk ? C.verdeSoft : C.ambarSoft }]}>
-              {salaOk ? "CONECTADA" : "SIN RESPUESTA"}
-            </Text>
-          )}
-        </View>
-        <Text style={s.body}>
-          Conecta con otros teléfonos y con la web Perú Te Busca usando un código de sala. En una red local funciona sin salida a internet.
-        </Text>
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+      {/* Opciones avanzadas (colapsadas: casi nadie las necesita) */}
+      <Pressable style={s.avzHead} onPress={() => setAvanzado(!avanzado)}>
+        <Text style={s.avzHeadT}>Opciones avanzadas</Text>
+        <Text style={s.avzChevron}>{avanzado ? "▲" : "▼"}</Text>
+      </Pressable>
+      {avanzado && (
+        <View style={s.card}>
+          <Text style={s.body}>
+            La app se conecta sola al canal nacional. Aquí puedes cambiar de canal (p. ej. uno solo para tu familia: “FAMILIA-PEREZ”) o usar un servidor propio en tu red local, que funciona sin salida a internet.
+          </Text>
+          <Text style={[s.label, { marginTop: 12 }]}>Tu nombre en el chat</Text>
           <TextInput
-            style={[s.input, { flex: 1, marginBottom: 0 }]}
+            style={s.input}
+            value={name}
+            onChangeText={cambiarNombre}
+            placeholder="Nombre de tu dispositivo"
+            placeholderTextColor={C.muted}
+          />
+          <Text style={s.label}>Canal</Text>
+          <TextInput
+            style={s.input}
             value={room}
             onChangeText={setRoom}
-            placeholder="Código de sala"
+            placeholder="Código del canal (p. ej. PERU)"
             placeholderTextColor={C.muted}
             autoCapitalize="characters"
-            editable={!salaOn}
           />
+          <Text style={s.label}>Servidor</Text>
+          <TextInput
+            style={s.input}
+            value={server}
+            onChangeText={setServer}
+            placeholder="https://peru-te-busca.fly.dev o http://IP:3000"
+            placeholderTextColor={C.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <PressableScale style={[s.btn, { flex: 1, backgroundColor: C.rojo }]} onPress={conectarManual}>
+              <Icon name="wifi" size={16} color="#fff" />
+              <Text style={s.btnT}>Reconectar</Text>
+            </PressableScale>
+            {salaOn && (
+              <PressableScale style={[s.btn, { flex: 1, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line }]} onPress={desconectar}>
+                <Text style={[s.btnT, { color: C.ink2 }]}>Desconectar</Text>
+              </PressableScale>
+            )}
+          </View>
+          <Text style={[s.hint, { marginTop: 10 }]}>
+            Bluetooth de teléfono a teléfono: llegará con la próxima versión (requiere build nativo). El QR y el canal ya usan la misma red.
+          </Text>
         </View>
-        <TextInput
-          style={[s.input, { marginTop: 8, marginBottom: 0 }]}
-          value={server}
-          onChangeText={setServer}
-          placeholder="Servidor (http://IP:3000)"
-          placeholderTextColor={C.muted}
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!salaOn}
-        />
-        <Pressable
-          style={[s.btn, { backgroundColor: salaOn ? C.surface2 : C.rojo, marginTop: 10, borderWidth: salaOn ? 1 : 0, borderColor: C.line }]}
-          onPress={salaOn ? desconectarSala : conectarSala}
-        >
-          <Icon name="wifi" size={17} color={salaOn ? C.ink2 : "#fff"} />
-          <Text style={[s.btnT, salaOn && { color: C.ink2 }]}>{salaOn ? `Salir de la sala ${room}` : "Conectar a la sala"}</Text>
-        </Pressable>
-      </View>
-
-      <View style={s.note}>
-        <Icon name="broadcast" size={15} color={C.ambar} />
-        <Text style={s.noteT}>
-          Bluetooth LE de teléfono a teléfono: pendiente de development build (Expo aún no lo incluye). El QR y la sala ya usan la misma malla.
-        </Text>
-      </View>
+      )}
 
       <QrModal visible={qrVisible} onClose={() => setQrVisible(false)} node={nodeRef.current} msgs={msgs} />
     </View>
@@ -334,7 +345,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
     const pkts = decodeMeshQR(data);
     if (!pkts) {
       scanLock.current = true;
-      Alert.alert("QR no válido", "Ese código no es un paquete de Red Malla de Perú Preparado.", [
+      Alert.alert("QR no válido", "Ese código no es de Perú Preparado. Pide a la otra persona que abra “Mostrar mi QR”.", [
         { text: "OK", onPress: () => (scanLock.current = false) },
       ]);
       return;
@@ -343,7 +354,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
     const nuevos = node.ingest(pkts);
     Alert.alert(
       nuevos > 0 ? "¡Mensajes recibidos!" : "Nada nuevo",
-      nuevos > 0 ? `${nuevos} mensaje(s) nuevo(s) entraron a tu malla y se relevarán.` : "Ya tenías todos los mensajes de ese QR.",
+      nuevos > 0 ? `${nuevos} mensaje(s) nuevo(s) entraron a tu teléfono y seguirán viajando.` : "Ya tenías todos los mensajes de ese QR.",
       [{ text: "OK", onPress: () => { scanLock.current = false; if (nuevos > 0) onClose(); } }],
     );
   }
@@ -352,10 +363,17 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={q.root}>
         <View style={q.head}>
-          <Text style={q.title}>Relevo por QR</Text>
+          <Text style={q.title}>Mensajes por QR</Text>
           <Pressable onPress={onClose} hitSlop={10}>
             <Text style={q.close}>Cerrar</Text>
           </Pressable>
+        </View>
+
+        {/* Cómo funciona, en 3 pasos */}
+        <View style={q.pasos}>
+          <Paso n="1" t="Tú muestras tu QR" />
+          <Paso n="2" t="La otra persona lo escanea" />
+          <Paso n="3" t="Sus mensajes y los tuyos se combinan y siguen viajando" />
         </View>
 
         <View style={q.seg}>
@@ -377,7 +395,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
               </>
             ) : (
               <>
-                <Text style={q.lead}>El otro teléfono escanea este código y recibe tus mensajes más recientes.</Text>
+                <Text style={q.lead}>La otra persona abre Perú Preparado, entra a “Escanear” y apunta a este código:</Text>
                 <View style={q.qrCard}>
                   <QRCode value={encodeMeshQR(msgs)} size={240} backgroundColor="white" color={C.slate} />
                 </View>
@@ -409,7 +427,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
                 setPasteCode("");
               }}
             >
-              <Text style={q.permT}>Ingerir mensajes</Text>
+              <Text style={q.permT}>Recibir mensajes</Text>
             </Pressable>
           </ScrollView>
         )}
@@ -424,7 +442,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
               <View style={q.body}>
                 <Icon name="search" size={40} color={C.muted} />
                 <Text style={[q.lead, { textAlign: "center", marginTop: 12 }]}>
-                  Necesitamos la cámara para escanear el QR de malla del otro teléfono.
+                  Necesitamos la cámara para escanear el QR del otro teléfono.
                 </Text>
                 <Pressable style={q.permBtn} onPress={requestPermission}>
                   <Text style={q.permT}>Permitir cámara</Text>
@@ -434,7 +452,7 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
               <View style={{ flex: 1 }}>
                 <CameraView style={{ flex: 1 }} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={onScan} />
                 <View style={q.scanHint}>
-                  <Text style={q.scanHintT}>Apunta al QR de Red Malla del otro teléfono</Text>
+                  <Text style={q.scanHintT}>Apunta al QR del otro teléfono</Text>
                 </View>
               </View>
             )}
@@ -445,14 +463,27 @@ function QrModal({ visible, onClose, node, msgs }: { visible: boolean; onClose: 
   );
 }
 
+function Paso({ n, t }: { n: string; t: string }) {
+  return (
+    <View style={q.paso}>
+      <View style={q.pasoN}>
+        <Text style={q.pasoNT}>{n}</Text>
+      </View>
+      <Text style={q.pasoT}>{t}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },
-  status: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 9, paddingVertical: 9, paddingHorizontal: 12, marginBottom: 11 },
-  sdot: { width: 9, height: 9, borderRadius: 5 },
-  statusT: { fontSize: 12.5, fontWeight: "800" },
+  status: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 11 },
+  sdot: { width: 10, height: 10, borderRadius: 5 },
+  statusT: { fontSize: 13, fontWeight: "800" },
+  statusS: { fontSize: 11, color: C.muted, marginTop: 1, lineHeight: 15 },
+  label: { fontSize: 11, fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 5 },
   input: { fontSize: 14.5, padding: 11, borderWidth: 1.5, borderColor: C.line, borderRadius: 9, color: C.ink, marginBottom: 11, backgroundColor: C.surface },
   qrow: { flexDirection: "row", gap: 7, marginBottom: 11 },
-  qbtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 9, paddingVertical: 10, paddingHorizontal: 4 },
+  qbtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 9, paddingVertical: 12, paddingHorizontal: 4 },
   qbtnT: { fontSize: 10.5, fontWeight: "800" },
   sendBtn: { backgroundColor: C.rojo, borderRadius: 9, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
   sendT: { color: "#fff", fontWeight: "800", fontSize: 14 },
@@ -464,9 +495,9 @@ const s = StyleSheet.create({
   hops: { fontSize: 10, fontWeight: "700", color: C.azul, backgroundColor: C.azulSoft, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1, overflow: "hidden" },
   msgTime: { marginLeft: "auto", fontSize: 10.5, color: C.muted },
   msgText: { fontSize: 13.5, color: C.ink2, marginTop: 3, lineHeight: 19 },
+  verUbic: { fontSize: 12, fontWeight: "800", color: C.azul, marginTop: 5 },
   secRow: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 7 },
   secT: { fontWeight: "700", fontSize: 14, color: C.ink },
-  salaBadge: { marginLeft: "auto", fontSize: 9.5, fontWeight: "900", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, overflow: "hidden" },
   body: { fontSize: 13, color: C.ink2, lineHeight: 19 },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10, paddingVertical: 12 },
   btnT: { color: "#fff", fontSize: 14, fontWeight: "800" },
@@ -476,10 +507,10 @@ const s = StyleSheet.create({
   famEstado: { fontSize: 11.5, fontWeight: "600", marginTop: 1 },
   famUbic: { backgroundColor: C.azulSoft, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 9 },
   famUbicT: { fontSize: 10.5, fontWeight: "800", color: C.azul },
-  verUbic: { fontSize: 12, fontWeight: "800", color: C.azul, marginTop: 5 },
-  note: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.ambarSoft, borderRadius: 9, padding: 10, marginBottom: 12 },
-  noteT: { flex: 1, fontSize: 11, color: C.ambar, fontWeight: "600", lineHeight: 15 },
-  hint: { fontSize: 11.5, color: C.muted },
+  avzHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4, marginBottom: 10 },
+  avzHeadT: { fontSize: 12.5, fontWeight: "700", color: C.muted },
+  avzChevron: { fontSize: 11, color: C.muted },
+  hint: { fontSize: 11.5, color: C.muted, lineHeight: 16 },
 });
 
 const q = StyleSheet.create({
@@ -487,6 +518,11 @@ const q = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 12 },
   title: { fontSize: 18, fontWeight: "800", color: C.ink },
   close: { fontSize: 14, fontWeight: "700", color: C.rojo },
+  pasos: { marginHorizontal: 16, marginBottom: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, gap: 9 },
+  paso: { flexDirection: "row", alignItems: "center", gap: 10 },
+  pasoN: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.rojo, alignItems: "center", justifyContent: "center" },
+  pasoNT: { color: "#fff", fontSize: 12, fontWeight: "900" },
+  pasoT: { flex: 1, fontSize: 12.5, color: C.ink2, fontWeight: "600", lineHeight: 17 },
   seg: { flexDirection: "row", marginHorizontal: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 10, overflow: "hidden", marginBottom: 4 },
   segBtn: { flex: 1, paddingVertical: 11, alignItems: "center" },
   segOn: { backgroundColor: C.rojo },

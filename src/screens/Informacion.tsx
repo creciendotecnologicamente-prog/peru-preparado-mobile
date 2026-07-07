@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, Linking, Share, StyleSheet } from "react-native";
 import { Icon } from "../components/Icon";
 import { PressableScale } from "../components/PressableScale";
+import { Section } from "../components/Section";
 import { C } from "../theme";
 import { haversineKm, intensidadAprox } from "../lib/geo";
 import type { Quake } from "../lib/usgs";
@@ -41,7 +42,7 @@ export function Informacion({ sismos, user }: { sismos: Quake[]; user: { lat: nu
 
   return (
     <View>
-      <Text style={s.sec}>Últimos sismos (IGP + USGS en vivo)</Text>
+      <Section icon="activity" title="Sismos recientes" hint="En vivo, del IGP (fuente oficial del Perú) y USGS. Toca cualquier sismo para ver el detalle y compartirlo." />
 
       {/* Filtros por magnitud */}
       <View style={s.ftabs}>
@@ -99,7 +100,7 @@ export function Informacion({ sismos, user }: { sismos: Quake[]; user: { lat: nu
         })}
       </View>
 
-      <Text style={s.sec}>Números de emergencia (24 h, gratuitos)</Text>
+      <Section icon="phone" title="Líneas de emergencia" hint="Gratuitas y atienden las 24 horas. Toca una tarjeta y tu teléfono marca solo." />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {EMERGENCIA.map(([num, lbl]) => (
           <PressableScale key={num} style={s.ecall} haptic="medium" onPress={() => Linking.openURL("tel:" + num)}>

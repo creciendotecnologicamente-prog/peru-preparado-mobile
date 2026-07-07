@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Icon } from "../components/Icon";
 import { PressableScale } from "../components/PressableScale";
+import { Section } from "../components/Section";
 import { C } from "../theme";
 import { haversineKm } from "../lib/geo";
 import type { Quake } from "../lib/usgs";
@@ -31,6 +32,7 @@ export function Inicio({
   const u = sismos[0];
   return (
     <View>
+      {/* Alerta Sísmica Temprana */}
       <PressableScale style={s.eew} onPress={onSimular} haptic="medium">
         <View style={s.eewIconWrap}>
           <PulseHalo />
@@ -38,24 +40,32 @@ export function Inicio({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.eewT}>Alerta Sísmica Temprana</Text>
-          <Text style={s.eewS}>Recibe el aviso ANTES del remezón · toca para simular</Text>
+          <Text style={s.eewS}>Recibe el aviso ANTES del remezón · toca para ver un simulacro</Text>
         </View>
       </PressableScale>
 
-      <View style={s.card}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 11 }}>
-          <Switch value={monitor} onValueChange={setMonitor} trackColor={{ true: C.rojo }} />
-          <View style={{ flex: 1 }}>
-            <Text style={s.bold}>Monitor en vivo (IGP + USGS)</Text>
-            <Text style={s.hint}>Dispara la alerta ante un sismo real M≥4.5 en la región</Text>
-          </View>
-        </View>
+      {/* Acciones de emergencia */}
+      <Section icon="alert" title="Si acaba de temblar" hint="Avisa con un toque: tu familia y el sistema de búsqueda lo verán." />
+      <View style={s.accRow}>
+        <PressableScale style={[s.accBig, { backgroundColor: C.verde }]} onPress={onSafe} haptic="medium">
+          <Icon name="check" size={24} color="#fff" />
+          <Text style={s.accBigT}>Estoy a salvo</Text>
+        </PressableScale>
+        <PressableScale style={[s.accBig, { backgroundColor: C.rojo }]} onPress={onReportar} haptic="medium">
+          <Icon name="alert" size={24} color="#fff" />
+          <Text style={s.accBigT}>Reportar{"\n"}emergencia</Text>
+        </PressableScale>
       </View>
+      <PressableScale style={s.buscar} onPress={onBuscar}>
+        <Icon name="search" size={18} color={C.azul} />
+        <Text style={s.buscarT}>Buscar a una persona desaparecida</Text>
+      </PressableScale>
 
-      <Text style={s.sec}>Último sismo (IGP + USGS en vivo)</Text>
+      {/* Sismos en vivo */}
+      <Section icon="activity" title="Sismos ahora" hint="Datos en vivo del IGP (fuente oficial del Perú) y USGS." />
       {u ? (
         <View style={s.sismo}>
-          <Text style={s.sHdr}>Fuente: {u.fuente} · evento real</Text>
+          <Text style={s.sHdr}>Último sismo · fuente {u.fuente}</Text>
           <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, marginTop: 6 }}>
             <Text style={s.mag}>{u.mag}</Text>
             <Text style={s.magU}>magnitud</Text>
@@ -63,7 +73,7 @@ export function Inicio({
           <View style={s.meta}>
             <Meta k="Profundidad" v={`${Math.round(u.depth)} km`} />
             <Meta k="A tu ubicación" v={`${Math.round(haversineKm(user.lat, user.lon, u.lat, u.lon))} km`} />
-            <Meta k="Referencia" v={u.place} wide />
+            <Meta k="Dónde" v={u.place} wide />
           </View>
         </View>
       ) : (
@@ -71,18 +81,24 @@ export function Inicio({
           <Text style={s.hint}>Cargando datos reales…</Text>
         </View>
       )}
-
-      <Text style={s.sec}>Acceso rápido</Text>
-      <View style={s.grid}>
-        <Tile icon="shield" label="Prevención" onPress={() => goTo("prevencion")} />
-        <Tile icon="broadcast" label="Información" onPress={() => goTo("informacion")} />
-        <Tile icon="message" label="Comunicar" onPress={() => goTo("comunicar")} />
-        <Tile icon="alert" label="Reportar" onPress={onReportar} />
-        <Tile icon="check" label="Estoy a salvo" onPress={onSafe} />
-        <Tile icon="search" label="Buscar persona" onPress={onBuscar} />
+      <View style={[s.card, { marginTop: 10 }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 11 }}>
+          <Switch value={monitor} onValueChange={setMonitor} trackColor={{ true: C.rojo }} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.bold}>Vigilancia automática</Text>
+            <Text style={s.hint}>Si se reporta un sismo fuerte (M ≥ 4.5), la app te alerta sola aunque estés en otra pantalla.</Text>
+          </View>
+        </View>
       </View>
 
-      <Text style={s.sec}>Alertas activas</Text>
+      {/* Navegación explicada */}
+      <Section icon="shield" title="Prepárate y comunícate" hint="Todo lo demás que esta app hace por ti." />
+      <NavCard icon="shield" title="Prevención" desc="Tu checklist de emergencia, tu ficha y la sincronización con tu familia." onPress={() => goTo("prevencion")} />
+      <NavCard icon="broadcast" title="Información" desc="Sismos recientes con detalle y los números de emergencia del Perú." onPress={() => goTo("informacion")} />
+      <NavCard icon="message" title="Comunicar" desc="Chat de emergencia (funciona sin internet) y búsqueda de personas." onPress={() => goTo("comunicar")} />
+
+      {/* Alertas activas */}
+      <Section icon="broadcast" title="Alertas activas" hint="Los avisos que esta app disparó recientemente." />
       <View style={s.card}>
         {alertas.length === 0 ? (
           <Text style={s.hint}>No hay alertas activas. Mantente preparado.</Text>
@@ -123,25 +139,36 @@ function Meta({ k, v, wide }: { k: string; v: string; wide?: boolean }) {
     </View>
   );
 }
-function Tile({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+
+function NavCard({ icon, title, desc, onPress }: { icon: string; title: string; desc: string; onPress: () => void }) {
   return (
-    <PressableScale style={s.tile} onPress={onPress}>
-      <Icon name={icon} size={26} color={C.ink2} />
-      <Text style={s.tileL}>{label}</Text>
+    <PressableScale style={s.nav} onPress={onPress}>
+      <View style={s.navIc}>
+        <Icon name={icon} size={21} color={C.rojo} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.navT}>{title}</Text>
+        <Text style={s.navD}>{desc}</Text>
+      </View>
+      <Text style={s.navGo}>›</Text>
     </PressableScale>
   );
 }
 
 const s = StyleSheet.create({
-  eew: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.rojo, borderRadius: 14, padding: 14, marginBottom: 14 },
+  eew: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.rojo, borderRadius: 14, padding: 14 },
   eewIconWrap: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
   halo: { position: "absolute", width: 26, height: 26, borderRadius: 13, backgroundColor: "#fff" },
   eewT: { color: "#fff", fontWeight: "800", fontSize: 15 },
   eewS: { color: "#fff", opacity: 0.92, fontSize: 11.5, marginTop: 1 },
-  card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },
+  card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15 },
   bold: { fontWeight: "700", color: C.ink },
-  hint: { fontSize: 11.5, color: C.muted },
-  sec: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.7, color: C.muted, marginTop: 8, marginBottom: 10 },
+  hint: { fontSize: 11.5, color: C.muted, lineHeight: 16 },
+  accRow: { flexDirection: "row", gap: 10 },
+  accBig: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 20 },
+  accBigT: { color: "#fff", fontSize: 14.5, fontWeight: "800", textAlign: "center", lineHeight: 19 },
+  buscar: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, backgroundColor: C.azulSoft, borderWidth: 1.5, borderColor: "#cfe0f5", borderRadius: 12, paddingVertical: 13, marginTop: 10 },
+  buscarT: { color: C.azul, fontSize: 13.5, fontWeight: "800" },
   sismo: { backgroundColor: C.slate, borderRadius: 14, padding: 16 },
   sHdr: { color: "#ff9a8f", fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
   mag: { color: "#fff", fontSize: 46, fontWeight: "900", lineHeight: 46 },
@@ -149,9 +176,11 @@ const s = StyleSheet.create({
   meta: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
   metaK: { color: "#fff", opacity: 0.7, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
   metaV: { color: "#fff", fontSize: 12, marginTop: 2 },
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  tile: { width: "31.5%", backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingVertical: 16, alignItems: "center", marginBottom: 10 },
-  tileL: { fontSize: 11.5, fontWeight: "700", color: C.ink2, marginTop: 6, textAlign: "center" },
+  nav: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14, marginBottom: 9 },
+  navIc: { width: 42, height: 42, borderRadius: 11, backgroundColor: C.rojoSoft, alignItems: "center", justifyContent: "center" },
+  navT: { fontSize: 14.5, fontWeight: "800", color: C.ink },
+  navD: { fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 16 },
+  navGo: { fontSize: 26, color: C.muted, fontWeight: "300", paddingHorizontal: 2 },
   aRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   aBorder: { borderTopWidth: 1, borderTopColor: C.line },
   aDot: { width: 10, height: 10, borderRadius: 5 },

@@ -5,6 +5,7 @@ import { Icon } from "../components/Icon";
 import { FamilySync } from "../components/FamilySync";
 import { PressableScale } from "../components/PressableScale";
 import { ProgressRing } from "../components/ProgressRing";
+import { Section } from "../components/Section";
 import { C } from "../theme";
 import { type Profile, preparedness, nivelPreparacion } from "../lib/profile";
 import { loadFamily } from "../lib/family";
@@ -49,7 +50,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
     <View>
       {profile && (
         <>
-          <Text style={s.sec}>Mi preparación</Text>
+          <Section icon="shield" title="Tu nivel de preparación" hint="Sube el porcentaje completando tu ficha y marcando tus checklists." />
           <View style={s.scoreCard}>
             <ProgressRing pct={pct} size={64} strokeWidth={6} color={nivel.color}>
               <Text style={[s.ringN, { color: nivel.color }]}>{pct}%</Text>
@@ -64,7 +65,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
             </View>
           </View>
 
-          <Text style={s.sec}>Mi ficha · sincronización familiar</Text>
+          <Section icon="users" title="Tu ficha familiar" hint="Es lo que tu familia ve para reconocerte en una emergencia. Sincronízala con ellos por QR, sin internet." />
           <View style={s.ficha}>
             <View style={s.fichaHead}>
               <View style={s.fichaAv}>
@@ -93,7 +94,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
         </>
       )}
 
-      <Text style={s.sec}>Prepárate antes del desastre</Text>
+      <Section icon="kit" title="Antes del desastre" hint="Marca lo que ya tienes listo. Se guarda en tu teléfono." />
       <Lista titulo="Mi plan familiar" icon="users" items={PLAN} prefix="p" done={done} toggle={toggle} />
       <Lista titulo="Mochila de emergencia" icon="kit" items={KIT} prefix="k" done={done} toggle={toggle} />
 

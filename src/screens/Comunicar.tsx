@@ -3,6 +3,7 @@ import { View, Text, Pressable, TextInput, Alert, Modal, ScrollView, StyleSheet 
 import * as Haptics from "expo-haptics";
 import { Icon } from "../components/Icon";
 import { PressableScale } from "../components/PressableScale";
+import { Section } from "../components/Section";
 import { RedMalla } from "../components/RedMalla";
 import { useToast } from "../components/Toast";
 import { C } from "../theme";
@@ -129,9 +130,9 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
 
   return (
     <View>
-      <Text style={s.sec}>Comunicación de emergencia</Text>
+      <Section icon="alert" title="Avisar" hint="Reporta una emergencia al centro de operaciones o avisa que estás bien. Llega al sistema nacional al instante." />
       <View style={s.card}>
-        <Text style={s.label}>Reportar emergencia</Text>
+        <Text style={s.label}>¿Qué pasa y dónde?</Text>
         <TextInput style={s.input} placeholder="Ubicación o referencia" value={ubic} onChangeText={setUbic} placeholderTextColor={C.muted} />
         <PressableScale style={[s.btn, { backgroundColor: C.rojo, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={reportarEmergencia} haptic="medium">
           <Icon name="alert" size={18} color="#fff" />
@@ -143,7 +144,7 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         </PressableScale>
       </View>
 
-      <Text style={s.sec}>Buscar personas</Text>
+      <Section icon="search" title="Personas desaparecidas" hint="Busca por nombre o DNI en el registro compartido entre esta app y la web Perú Te Busca." />
       <View style={s.card}>
         <TextInput style={s.input} placeholder="Nombre, apellido o DNI…" value={q} onChangeText={setQ} placeholderTextColor={C.muted} />
         {sinServer || !server ? (
@@ -181,7 +182,7 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         </PressableScale>
       </View>
 
-      <Text style={s.sec}>Red Malla (sin internet)</Text>
+      <Section icon="broadcast" title="Chat de emergencia" hint="Se conecta solo. Y si no hay internet, tus mensajes pueden viajar de teléfono en teléfono por QR." />
       <RedMalla profile={profile} />
 
       <FormPersona
