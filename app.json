@@ -18,6 +18,14 @@
         {
           "cameraPermission": "Perú Preparado usa la cámara para escanear el código QR de tu familia y sincronizar sus fichas."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#C0392B",
+          "defaultChannel": "sismos"
+        }
       ]
     ],
     "ios": {

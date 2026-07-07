@@ -12,6 +12,7 @@ import { fetchSismos, type Quake } from "./src/lib/usgs";
 import { Onboarding } from "./src/components/Onboarding";
 import { loadProfile, saveProfile, type Profile } from "./src/lib/profile";
 import { loadServer, enviarReporte } from "./src/lib/server";
+import { registerForPushNotifications } from "./src/lib/notifications";
 import { C } from "./src/theme";
 
 type View2 = "inicio" | "prevencion" | "informacion" | "comunicar";
@@ -35,6 +36,7 @@ export default function App() {
       setProfile(p);
       setLoadingProfile(false);
     });
+    registerForPushNotifications();
   }, []);
 
   function trigger(ev: EewEvent, nivel = "rojo") {
