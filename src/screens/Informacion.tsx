@@ -42,7 +42,7 @@ export function Informacion({ sismos, user }: { sismos: Quake[]; user: { lat: nu
 
   return (
     <View>
-      <Section icon="activity" title="Sismos recientes" hint="En vivo, del IGP (fuente oficial del Perú) y USGS. Toca cualquier sismo para ver el detalle y compartirlo." />
+      <Section icon="activity" title="Sismos recientes" hint="En vivo, del IGP y USGS. Toca un sismo para ver el detalle." tone="azul" />
 
       {/* Filtros por magnitud */}
       <View style={s.ftabs}>
@@ -100,7 +100,7 @@ export function Informacion({ sismos, user }: { sismos: Quake[]; user: { lat: nu
         })}
       </View>
 
-      <Section icon="phone" title="Líneas de emergencia" hint="Gratuitas y atienden las 24 horas. Toca una tarjeta y tu teléfono marca solo." />
+      <Section icon="phone" title="Líneas de emergencia" hint="Gratuitas, 24 horas. Toca una tarjeta y tu teléfono marca solo." tone="rojo" />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {EMERGENCIA.map(([num, lbl]) => (
           <PressableScale key={num} style={s.ecall} haptic="medium" onPress={() => Linking.openURL("tel:" + num)}>

@@ -17,14 +17,13 @@ import { haversineKm } from "../lib/geo";
 import type { Quake } from "../lib/usgs";
 
 export function Inicio({
-  sismos, user, monitor, setMonitor, onSimular, goTo, onReportar, onSafe, onBuscar, alertas,
+  sismos, user, monitor, setMonitor, onSimular, onReportar, onSafe, onBuscar, alertas,
 }: {
   sismos: Quake[];
   user: { lat: number; lon: number };
   monitor: boolean;
   setMonitor: (v: boolean) => void;
   onSimular: () => void;
-  goTo: (v: "prevencion" | "informacion" | "comunicar") => void;
   onReportar: () => void;
   onSafe: () => void;
   onBuscar: () => void;
@@ -63,7 +62,7 @@ export function Inicio({
       </PressableScale>
 
       {/* Sismos en vivo */}
-      <Section icon="activity" title="Sismos ahora" hint="Datos en vivo del IGP (fuente oficial del Perú) y USGS." />
+      <Section icon="activity" title="Sismos ahora" hint="Datos en vivo del IGP (fuente oficial del Perú) y USGS." tone="azul" />
       {u ? (
         <View style={s.sismo}>
           <Text style={s.sHdr}>Último sismo · fuente {u.fuente}</Text>
@@ -92,14 +91,8 @@ export function Inicio({
         </View>
       </View>
 
-      {/* Navegación explicada */}
-      <Section icon="shield" title="Prepárate y comunícate" hint="Todo lo demás que esta app hace por ti." />
-      <NavCard icon="shield" title="Prevención" desc="Tu checklist de emergencia, tu ficha y la sincronización con tu familia." onPress={() => goTo("prevencion")} />
-      <NavCard icon="broadcast" title="Información" desc="Sismos recientes con detalle y los números de emergencia del Perú." onPress={() => goTo("informacion")} />
-      <NavCard icon="message" title="Comunicar" desc="Chat de emergencia (funciona sin internet) y búsqueda de personas." onPress={() => goTo("comunicar")} />
-
       {/* Alertas activas */}
-      <Section icon="broadcast" title="Alertas activas" hint="Los avisos que esta app disparó recientemente." />
+      <Section icon="broadcast" title="Alertas activas" hint="Los avisos que esta app disparó recientemente." tone="ambar" />
       <View style={s.card}>
         {alertas.length === 0 ? (
           <Text style={s.hint}>No hay alertas activas. Mantente preparado.</Text>
@@ -143,21 +136,6 @@ function Meta({ k, v, wide }: { k: string; v: string; wide?: boolean }) {
   );
 }
 
-function NavCard({ icon, title, desc, onPress }: { icon: string; title: string; desc: string; onPress: () => void }) {
-  return (
-    <PressableScale style={s.nav} onPress={onPress}>
-      <View style={s.navIc}>
-        <Icon name={icon} size={21} color={C.rojo} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.navT}>{title}</Text>
-        <Text style={s.navD}>{desc}</Text>
-      </View>
-      <Text style={s.navGo}>›</Text>
-    </PressableScale>
-  );
-}
-
 const s = StyleSheet.create({
   eew: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.rojo, borderRadius: 14, padding: 14 },
   eewIconWrap: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
@@ -179,11 +157,6 @@ const s = StyleSheet.create({
   meta: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
   metaK: { color: "#fff", opacity: 0.7, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
   metaV: { color: "#fff", fontSize: 12, marginTop: 2 },
-  nav: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14, marginBottom: 9 },
-  navIc: { width: 42, height: 42, borderRadius: 11, backgroundColor: C.rojoSoft, alignItems: "center", justifyContent: "center" },
-  navT: { fontSize: 14.5, fontWeight: "800", color: C.ink },
-  navD: { fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 16 },
-  navGo: { fontSize: 26, color: C.muted, fontWeight: "300", paddingHorizontal: 2 },
   aRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   aBorder: { borderTopWidth: 1, borderTopColor: C.line },
   aDot: { width: 10, height: 10, borderRadius: 5 },

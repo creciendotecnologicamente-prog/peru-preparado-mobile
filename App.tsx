@@ -233,7 +233,6 @@ function AppInner() {
             monitor={monitor}
             setMonitor={setMonitor}
             onSimular={simular}
-            goTo={setView}
             onReportar={onReportar}
             onSafe={onSafe}
             onBuscar={onBuscar}

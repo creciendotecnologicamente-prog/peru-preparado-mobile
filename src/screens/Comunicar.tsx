@@ -84,25 +84,7 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
       setUbic("");
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("No se pudo enviar", `${e?.message ?? "Error"}. Verifica el servidor (Red Malla → Sala) o usa la malla si no hay internet.`);
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  async function avisarASalvo() {
-    setEnviando(true);
-    try {
-      await enviarReporte(server, {
-        tipo: "a-salvo",
-        nombre: profile?.nombre || undefined,
-        ...(dniValido(profile?.dni) ? { dni: profile!.dni } : {}),
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast("success", "Tu “estoy a salvo” quedó registrado. Envíalo también por la Red Malla.");
-    } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("No se pudo enviar", `${e?.message ?? "Error"}. Sin internet, usa el botón “Estoy a salvo” de la Red Malla.`);
+      Alert.alert("No se pudo enviar", `${e?.message ?? "Error"}. Sin internet, usa el Chat de emergencia más abajo.`);
     } finally {
       setEnviando(false);
     }
@@ -130,7 +112,7 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
 
   return (
     <View>
-      <Section icon="alert" title="Avisar" hint="Reporta una emergencia al centro de operaciones o avisa que estás bien. Llega al sistema nacional al instante." />
+      <Section icon="alert" title="Reportar emergencia" hint="Con ubicación y detalle, llega directo al centro de operaciones (COE)." tone="rojo" />
       <View style={s.card}>
         <Text style={s.label}>¿Qué pasa y dónde?</Text>
         <TextInput style={s.input} placeholder="Ubicación o referencia" value={ubic} onChangeText={setUbic} placeholderTextColor={C.muted} />
@@ -138,17 +120,14 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
           <Icon name="alert" size={18} color="#fff" />
           <Text style={s.btnTx}>Enviar reporte al COE</Text>
         </PressableScale>
-        <PressableScale style={[s.btn, { backgroundColor: C.verde, marginTop: 9, opacity: enviando ? 0.6 : 1 }]} disabled={enviando} onPress={avisarASalvo} haptic="medium">
-          <Icon name="check" size={18} color="#fff" />
-          <Text style={s.btnTx}>Avisar “Estoy a salvo”</Text>
-        </PressableScale>
+        <Text style={s.miniHint}>¿Solo quieres avisar que estás bien? Usa “Estoy a salvo” en Inicio.</Text>
       </View>
 
-      <Section icon="search" title="Personas desaparecidas" hint="Busca por nombre o DNI en el registro compartido entre esta app y la web Perú Te Busca." />
+      <Section icon="search" title="Personas desaparecidas" hint="Busca por nombre o DNI en el registro compartido con la web Perú Te Busca." tone="azul" />
       <View style={s.card}>
         <TextInput style={s.input} placeholder="Nombre, apellido o DNI…" value={q} onChangeText={setQ} placeholderTextColor={C.muted} />
         {sinServer || !server ? (
-          <Text style={s.hint}>Sin conexión al servidor Perú Te Busca. Configúralo abajo en Red Malla → Sala vía servidor.</Text>
+          <Text style={s.hint}>Sin conexión al servidor. Revisa tu internet e inténtalo de nuevo.</Text>
         ) : buscando && personas.length === 0 ? (
           <Text style={s.hint}>Buscando…</Text>
         ) : personas.length === 0 ? (
@@ -182,7 +161,7 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
         </PressableScale>
       </View>
 
-      <Section icon="broadcast" title="Chat de emergencia" hint="Se conecta solo. Y si no hay internet, tus mensajes pueden viajar de teléfono en teléfono por QR." />
+      <Section icon="broadcast" title="Chat de emergencia" hint="Se conecta solo. Sin internet, tus mensajes viajan de teléfono en teléfono por QR." tone="verde" />
       <RedMalla profile={profile} />
 
       <FormPersona
@@ -226,7 +205,7 @@ function FormPersona({
     try {
       await crearPersona(server, { ...f, desc: f.desc?.trim() || undefined });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast("success", "Persona registrada como BUSCADA. Compártelo por la Red Malla.");
+      toast("success", "Persona registrada como BUSCADA. Compártelo por el Chat de emergencia.");
       onCreada();
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -306,6 +285,7 @@ const s = StyleSheet.create({
   sec: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.7, color: C.muted, marginTop: 8, marginBottom: 10 },
   card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: "600", color: C.ink2, marginBottom: 6 },
+  miniHint: { fontSize: 11.5, color: C.muted, textAlign: "center", marginTop: 10 },
   input: { fontSize: 15, padding: 11, borderWidth: 1.5, borderColor: C.line, borderRadius: 9, color: C.ink, marginBottom: 12 },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 9, paddingVertical: 13 },
   btnTx: { color: "#fff", fontSize: 14.5, fontWeight: "700" },

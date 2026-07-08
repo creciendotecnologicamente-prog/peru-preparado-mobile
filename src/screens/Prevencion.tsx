@@ -50,7 +50,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
     <View>
       {profile && (
         <>
-          <Section icon="shield" title="Tu nivel de preparación" hint="Sube el porcentaje completando tu ficha y marcando tus checklists." />
+          <Section icon="shield" title="Tu nivel de preparación" hint="Sube el porcentaje completando tu ficha y marcando tus checklists." tone="verde" />
           <View style={s.scoreCard}>
             <ProgressRing pct={pct} size={64} strokeWidth={6} color={nivel.color}>
               <Text style={[s.ringN, { color: nivel.color }]}>{pct}%</Text>
@@ -65,7 +65,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
             </View>
           </View>
 
-          <Section icon="users" title="Tu ficha familiar" hint="Es lo que tu familia ve para reconocerte en una emergencia. Sincronízala con ellos por QR, sin internet." />
+          <Section icon="users" title="Tu ficha familiar" hint="Así te reconoce tu familia. Sincronízala por QR, sin internet." tone="azul" />
           <View style={s.ficha}>
             <View style={s.fichaHead}>
               <View style={s.fichaAv}>
@@ -82,10 +82,6 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
             {profile.miembros ? <FRow k="Familia" v={`${profile.miembros} persona(s)${profile.vulnerables.length ? " · " + profile.vulnerables.length + " vulnerable(s)" : ""}`} /> : null}
             {profile.contactoNombre ? <FRow k="Contacto" v={`${profile.contactoNombre} · ${profile.contactoTel || "—"}`} /> : null}
             {profile.mensaje ? <FRow k="Mensaje" v={`“${profile.mensaje}”`} /> : null}
-            <View style={s.bt}>
-              <Icon name="broadcast" size={15} color={C.azul} />
-              <Text style={s.btT}>Tu familia te reconoce con esta ficha. Sincronízala por QR, sin internet.</Text>
-            </View>
             <PressableScale style={s.syncBtn} onPress={() => setSync(true)} haptic="medium">
               <Icon name="users" size={17} color="#fff" />
               <Text style={s.syncT}>Sincronizar con mi familia{famCount ? ` · ${famCount}` : ""}</Text>
@@ -94,7 +90,7 @@ export function Prevencion({ profile, onEdit }: { profile: Profile | null; onEdi
         </>
       )}
 
-      <Section icon="kit" title="Antes del desastre" hint="Marca lo que ya tienes listo. Se guarda en tu teléfono." />
+      <Section icon="kit" title="Antes del desastre" hint="Marca lo que ya tienes listo. Se guarda en tu teléfono." tone="ambar" />
       <Lista titulo="Mi plan familiar" icon="users" items={PLAN} prefix="p" done={done} toggle={toggle} />
       <Lista titulo="Mochila de emergencia" icon="kit" items={KIT} prefix="k" done={done} toggle={toggle} />
 
@@ -174,8 +170,6 @@ const s = StyleSheet.create({
   fRow: { flexDirection: "row", gap: 10, paddingVertical: 5, borderTopWidth: 1, borderTopColor: C.line },
   fK: { width: 70, fontSize: 11, fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: 0.3, paddingTop: 1 },
   fV: { flex: 1, fontSize: 13, color: C.ink2 },
-  bt: { flexDirection: "row", gap: 8, alignItems: "center", marginTop: 12, backgroundColor: C.azulSoft, borderRadius: 9, padding: 10 },
-  btT: { flex: 1, fontSize: 11.5, color: C.azul, fontWeight: "600" },
   syncBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.rojo, borderRadius: 11, paddingVertical: 13, marginTop: 11 },
   syncT: { color: "#fff", fontSize: 14.5, fontWeight: "800" },
   card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 14, marginBottom: 10 },
