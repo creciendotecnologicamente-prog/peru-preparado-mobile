@@ -162,7 +162,7 @@ function Step({ icon, title, lead, children }: { icon: string; title: string; le
     <View>
       <View style={st.stepHead}>
         <View style={st.stepIc}>
-          <Icon name={icon} size={22} color={C.rojo} />
+          <Icon name={icon} size={22} color={C.primario} />
         </View>
         <Text style={st.h1}>{title}</Text>
       </View>
@@ -215,36 +215,36 @@ const st = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   top: { paddingTop: Platform.OS === "ios" ? 56 : 30, paddingHorizontal: 20, paddingBottom: 10, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.line },
   bar: { height: 6, borderRadius: 6, backgroundColor: C.surface2, overflow: "hidden" },
-  barFill: { height: "100%", backgroundColor: C.rojo, borderRadius: 6 },
+  barFill: { height: "100%", backgroundColor: C.primario, borderRadius: 6 },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
   paso: { fontSize: 12, fontWeight: "700", color: C.muted },
-  cerrar: { fontSize: 13, fontWeight: "700", color: C.rojo },
-  hero: { width: 86, height: 86, borderRadius: 24, backgroundColor: C.rojo, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  cerrar: { fontSize: 13, fontWeight: "700", color: C.primario },
+  hero: { width: 86, height: 86, borderRadius: 24, backgroundColor: C.primario, alignItems: "center", justifyContent: "center", marginBottom: 16 },
   h1: { fontSize: 22, fontWeight: "800", color: C.ink },
   lead: { fontSize: 14, color: C.ink2, lineHeight: 21, marginTop: 6 },
   bullet: { flexDirection: "row", gap: 10, alignItems: "flex-start", alignSelf: "stretch", marginTop: 12 },
-  bdot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.rojo, marginTop: 6 },
+  bdot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primario, marginTop: 6 },
   bt: { flex: 1, fontSize: 14, color: C.ink2, lineHeight: 20 },
   priv: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22, backgroundColor: C.verdeSoft, borderRadius: 10, padding: 12, alignSelf: "stretch" },
   privT: { fontSize: 12.5, color: C.verde, fontWeight: "600", flex: 1 },
   stepHead: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 },
-  stepIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.rojoSoft, alignItems: "center", justifyContent: "center" },
+  stepIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.primarioSoft, alignItems: "center", justifyContent: "center" },
   label: { fontSize: 13.5, fontWeight: "700", color: C.ink2, marginBottom: 7 },
   input: { fontSize: 16, padding: 13, borderWidth: 1.5, borderColor: C.line, borderRadius: 11, color: C.ink, backgroundColor: C.surface },
   hint: { fontSize: 11.5, color: C.muted, marginTop: 5 },
   chip: { paddingVertical: 9, paddingHorizontal: 13, borderRadius: 20, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.surface },
-  chipOn: { backgroundColor: C.rojo, borderColor: C.rojo },
+  chipOn: { backgroundColor: C.primario, borderColor: C.primario },
   chipT: { fontSize: 12.5, fontWeight: "600", color: C.ink2 },
   toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 14, marginBottom: 10 },
   toggleL: { flex: 1, fontSize: 14, color: C.ink, lineHeight: 19 },
-  scoreBox: { alignItems: "center", marginTop: 6, backgroundColor: C.slate, borderRadius: 14, paddingVertical: 18 },
+  scoreBox: { alignItems: "center", marginTop: 6, backgroundColor: C.marino, borderRadius: 14, paddingVertical: 18 },
   scoreN: { fontSize: 40, fontWeight: "900", color: "#fff" },
   scoreL: { fontSize: 12, color: "#fff", opacity: 0.85, marginTop: 2 },
   finBox: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: C.azulSoft, borderRadius: 12, padding: 14, marginTop: 4 },
   finT: { flex: 1, fontSize: 13, color: C.ink2, lineHeight: 19 },
   foot: { flexDirection: "row", gap: 10, padding: 16, paddingBottom: Platform.OS === "ios" ? 30 : 16, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.surface },
   btn: { flex: 1, borderRadius: 12, paddingVertical: 15, alignItems: "center" },
-  btnMain: { backgroundColor: C.rojo },
+  btnMain: { backgroundColor: C.primario },
   btnMainT: { color: "#fff", fontSize: 15.5, fontWeight: "800" },
   btnGhost: { backgroundColor: C.surface, borderWidth: 1.5, borderColor: C.line },
   btnGhostT: { color: C.ink2, fontSize: 15.5, fontWeight: "700" },

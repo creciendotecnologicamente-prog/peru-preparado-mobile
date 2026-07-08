@@ -311,7 +311,7 @@ export function RedMalla({ profile }: { profile?: Profile | null }) {
             autoCorrect={false}
           />
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <PressableScale style={[s.btn, { flex: 1, backgroundColor: C.rojo }]} onPress={conectarManual}>
+            <PressableScale style={[s.btn, { flex: 1, backgroundColor: C.primario }]} onPress={conectarManual}>
               <Icon name="wifi" size={16} color="#fff" />
               <Text style={s.btnT}>Reconectar</Text>
             </PressableScale>
@@ -485,7 +485,7 @@ const s = StyleSheet.create({
   qrow: { flexDirection: "row", gap: 7, marginBottom: 11 },
   qbtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 9, paddingVertical: 12, paddingHorizontal: 4 },
   qbtnT: { fontSize: 10.5, fontWeight: "800" },
-  sendBtn: { backgroundColor: C.rojo, borderRadius: 9, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
+  sendBtn: { backgroundColor: C.primario, borderRadius: 9, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
   sendT: { color: "#fff", fontWeight: "800", fontSize: 14 },
   msgs: { marginTop: 12, borderTopWidth: 1, borderTopColor: C.line },
   msg: { paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.line },
@@ -517,21 +517,21 @@ const q = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg, paddingTop: 52 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 12 },
   title: { fontSize: 18, fontWeight: "800", color: C.ink },
-  close: { fontSize: 14, fontWeight: "700", color: C.rojo },
+  close: { fontSize: 14, fontWeight: "700", color: C.primario },
   pasos: { marginHorizontal: 16, marginBottom: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, gap: 9 },
   paso: { flexDirection: "row", alignItems: "center", gap: 10 },
-  pasoN: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.rojo, alignItems: "center", justifyContent: "center" },
+  pasoN: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.primario, alignItems: "center", justifyContent: "center" },
   pasoNT: { color: "#fff", fontSize: 12, fontWeight: "900" },
   pasoT: { flex: 1, fontSize: 12.5, color: C.ink2, fontWeight: "600", lineHeight: 17 },
   seg: { flexDirection: "row", marginHorizontal: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 10, overflow: "hidden", marginBottom: 4 },
   segBtn: { flex: 1, paddingVertical: 11, alignItems: "center" },
-  segOn: { backgroundColor: C.rojo },
+  segOn: { backgroundColor: C.primario },
   segT: { fontSize: 12.5, fontWeight: "700", color: C.muted },
   body: { padding: 22, alignItems: "center" },
   lead: { fontSize: 14, color: C.ink2, lineHeight: 20 },
   qrCard: { backgroundColor: "#fff", padding: 22, borderRadius: 18, marginTop: 18, borderWidth: 1, borderColor: C.line },
   sub: { fontSize: 13, color: C.muted, marginTop: 12 },
-  permBtn: { backgroundColor: C.rojo, borderRadius: 11, paddingVertical: 13, paddingHorizontal: 22, marginTop: 16 },
+  permBtn: { backgroundColor: C.primario, borderRadius: 11, paddingVertical: 13, paddingHorizontal: 22, marginTop: 16 },
   permT: { color: "#fff", fontWeight: "800", fontSize: 15 },
   pasteInput: { alignSelf: "stretch", fontSize: 14, padding: 13, borderWidth: 1.5, borderColor: C.line, borderRadius: 11, color: C.ink, backgroundColor: C.surface, marginTop: 16 },
   scanHint: { position: "absolute", bottom: 28, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 20, paddingVertical: 9, paddingHorizontal: 16 },

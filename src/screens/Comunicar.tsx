@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, TextInput, Alert, Modal, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, TextInput, Alert, Modal, ScrollView, Linking, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Icon } from "../components/Icon";
 import { PressableScale } from "../components/PressableScale";
@@ -21,7 +21,7 @@ import {
 
 const dniValido = (d?: string) => !!d && /^\d{8}$/.test(d);
 
-export function Comunicar({ profile }: { profile?: Profile | null }) {
+export function Comunicar({ profile, onBack }: { profile?: Profile | null; onBack?: () => void }) {
   const toast = useToast();
   const [server, setServer] = useState("");
   const [ubic, setUbic] = useState("");
@@ -112,6 +112,14 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
 
   return (
     <View>
+      {onBack && (
+        <PressableScale style={s.back} onPress={onBack}>
+          <Text style={s.backChevron}>‹</Text>
+          <Text style={s.backT}>Volver</Text>
+          <Text style={s.backTitulo}>Centro de emergencia</Text>
+        </PressableScale>
+      )}
+
       <Section icon="alert" title="Reportar emergencia" hint="Con ubicación y detalle, llega directo al centro de operaciones (COE)." tone="rojo" />
       <View style={s.card}>
         <Text style={s.label}>¿Qué pasa y dónde?</Text>
@@ -163,6 +171,16 @@ export function Comunicar({ profile }: { profile?: Profile | null }) {
 
       <Section icon="broadcast" title="Chat de emergencia" hint="Se conecta solo. Sin internet, tus mensajes viajan de teléfono en teléfono por QR." tone="verde" />
       <RedMalla profile={profile} />
+
+      <Section icon="phone" title="Líneas de emergencia" hint="Gratuitas, 24 horas. Toca una y tu teléfono marca solo." tone="rojo" />
+      <View style={s.telGrid}>
+        {([["105", "Policía"], ["116", "Bomberos"], ["106", "SAMU"], ["115", "INDECI"]] as [string, string][]).map(([num, lbl]) => (
+          <PressableScale key={num} style={s.tel} haptic="medium" onPress={() => Linking.openURL("tel:" + num)}>
+            <Text style={s.telNum}>{num}</Text>
+            <Text style={s.telLbl}>{lbl}</Text>
+          </PressableScale>
+        ))}
+      </View>
 
       <FormPersona
         visible={formVisible}
@@ -282,6 +300,10 @@ function Campo({
 }
 
 const s = StyleSheet.create({
+  back: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
+  backChevron: { fontSize: 26, color: C.primario, fontWeight: "400", marginTop: -3 },
+  backT: { fontSize: 14, fontWeight: "800", color: C.primario },
+  backTitulo: { fontSize: 13, fontWeight: "700", color: C.muted, marginLeft: "auto" },
   sec: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.7, color: C.muted, marginTop: 8, marginBottom: 10 },
   card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 15, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: "600", color: C.ink2, marginBottom: 6 },
@@ -296,19 +318,23 @@ const s = StyleSheet.create({
   pSub: { fontSize: 12, color: C.muted, marginTop: 1 },
   pAct: { fontSize: 12.5, fontWeight: "800", color: C.verde, marginTop: 5 },
   pBadge: { fontSize: 10, fontWeight: "800", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, overflow: "hidden" },
+  telGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 },
+  tel: { width: "47%", flexDirection: "row", alignItems: "center", gap: 11, padding: 13, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line },
+  telNum: { backgroundColor: C.alerta, color: "#fff", borderRadius: 9, paddingHorizontal: 11, paddingVertical: 5, fontSize: 16, fontWeight: "900", overflow: "hidden" },
+  telLbl: { fontSize: 13, fontWeight: "800", color: C.ink },
 });
 
 const m = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg, paddingTop: 52 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 12 },
   title: { fontSize: 17, fontWeight: "800", color: C.ink },
-  close: { fontSize: 14, fontWeight: "700", color: C.rojo },
+  close: { fontSize: 14, fontWeight: "700", color: C.primario },
   label: { fontSize: 12, fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 5 },
   input: { fontSize: 14.5, padding: 11, borderWidth: 1.5, borderColor: C.line, borderRadius: 9, color: C.ink, backgroundColor: C.surface },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
   chip: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingVertical: 6, paddingHorizontal: 11, backgroundColor: C.surface },
-  chipOn: { backgroundColor: C.rojo, borderColor: C.rojo },
+  chipOn: { backgroundColor: C.primario, borderColor: C.primario },
   chipT: { fontSize: 12, fontWeight: "700", color: C.ink2 },
-  send: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.rojo, borderRadius: 11, paddingVertical: 14, marginTop: 8 },
+  send: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.primario, borderRadius: 11, paddingVertical: 14, marginTop: 8 },
   sendT: { color: "#fff", fontSize: 15, fontWeight: "800" },
 });

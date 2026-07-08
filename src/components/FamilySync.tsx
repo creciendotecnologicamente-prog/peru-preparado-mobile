@@ -161,7 +161,7 @@ export function FamilySync({ profile, visible, onClose }: { profile: Profile; vi
             ) : (
               family.map((m) => (
                 <View key={m.id} style={s.member}>
-                  <View style={s.mAv}><Icon name="users" size={18} color={C.rojo} /></View>
+                  <View style={s.mAv}><Icon name="users" size={18} color={C.primario} /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.mName}>{m.nombre || "Sin nombre"}</Text>
                     <Text style={s.mSub}>DNI {m.dni || "—"}{m.region ? " · " + m.region : ""}</Text>
@@ -184,17 +184,17 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg, paddingTop: 52 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 12 },
   title: { fontSize: 18, fontWeight: "800", color: C.ink },
-  close: { fontSize: 14, fontWeight: "700", color: C.rojo },
+  close: { fontSize: 14, fontWeight: "700", color: C.primario },
   seg: { flexDirection: "row", marginHorizontal: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 10, overflow: "hidden", marginBottom: 4 },
   segBtn: { flex: 1, paddingVertical: 11, alignItems: "center" },
-  segOn: { backgroundColor: C.rojo },
+  segOn: { backgroundColor: C.primario },
   segT: { fontSize: 12.5, fontWeight: "700", color: C.muted },
   body: { padding: 22, alignItems: "center" },
   lead: { fontSize: 14, color: C.ink2, lineHeight: 20 },
   qrCard: { backgroundColor: "#fff", padding: 22, borderRadius: 18, marginTop: 18, borderWidth: 1, borderColor: C.line },
   qrName: { fontSize: 18, fontWeight: "800", color: C.ink, marginTop: 16 },
   qrSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  permBtn: { backgroundColor: C.rojo, borderRadius: 11, paddingVertical: 13, paddingHorizontal: 22, marginTop: 16 },
+  permBtn: { backgroundColor: C.primario, borderRadius: 11, paddingVertical: 13, paddingHorizontal: 22, marginTop: 16 },
   permT: { color: "#fff", fontWeight: "800", fontSize: 15 },
   scanHint: { position: "absolute", bottom: 28, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 20, paddingVertical: 9, paddingHorizontal: 16 },
   scanHintT: { color: "#fff", fontSize: 13, fontWeight: "600" },

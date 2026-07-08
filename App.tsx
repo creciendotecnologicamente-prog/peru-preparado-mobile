@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, ScrollView, RefreshControl, StatusBar, Platform, Alert, Linking, Share, StyleSheet } from "react-native";
+import { View, Text, ScrollView, RefreshControl, StatusBar, Platform, Linking, Share, StyleSheet } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
 import { Icon } from "./src/components/Icon";
+import { Marca } from "./src/components/Marca";
 import { Eew, type EewEvent } from "./src/components/Eew";
 import { Inicio } from "./src/screens/Inicio";
-import { Informacion } from "./src/screens/Informacion";
+import { Mapa } from "./src/screens/Mapa";
 import { Prevencion } from "./src/screens/Prevencion";
+import { Perfil } from "./src/screens/Perfil";
 import { Comunicar } from "./src/screens/Comunicar";
 import { fetchSismos, type Quake } from "./src/lib/usgs";
 import { Onboarding } from "./src/components/Onboarding";
@@ -18,8 +20,18 @@ import { ToastProvider, useToast } from "./src/components/Toast";
 import { PressableScale } from "./src/components/PressableScale";
 import { C } from "./src/theme";
 
-type View2 = "inicio" | "prevencion" | "informacion" | "comunicar";
+type Tab = "inicio" | "mapa" | "preparate" | "perfil";
 const LIMA = { lat: -12.05, lon: -77.04 };
+
+/** Una alerta sísmica se considera "activa" durante los 30 min posteriores. */
+const ALERTA_VIGENCIA_MS = 30 * 60_000;
+
+export interface AlertaActiva {
+  ev: EewEvent;
+  desde: number;
+}
+
+export type EstadoSalvo = "idle" | "enviando" | { hora: string; conUbicacion: boolean };
 
 export default function App() {
   return (
@@ -31,13 +43,15 @@ export default function App() {
 
 function AppInner() {
   const toast = useToast();
-  const [view, setView] = useState<View2>("inicio");
+  const [tab, setTab] = useState<Tab>("inicio");
+  const [centroAbierto, setCentroAbierto] = useState(false);
   const [sismos, setSismos] = useState<Quake[]>([]);
   const [user, setUser] = useState(LIMA);
   const [geoOk, setGeoOk] = useState(false);
   const [eewEvent, setEewEvent] = useState<EewEvent | null>(null);
+  const [alerta, setAlerta] = useState<AlertaActiva | null>(null);
+  const [salvo, setSalvo] = useState<EstadoSalvo>("idle");
   const [monitor, setMonitor] = useState(false);
-  const [alertas, setAlertas] = useState<{ id: string; tipo: string; msg: string; nivel: string }[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -51,11 +65,24 @@ function AppInner() {
     registerForPushNotifications();
   }, []);
 
-  function trigger(ev: EewEvent, nivel = "rojo") {
+  // La alerta expira sola pasada su vigencia.
+  useEffect(() => {
+    if (!alerta) return;
+    const iv = setInterval(() => {
+      if (Date.now() - alerta.desde > ALERTA_VIGENCIA_MS) terminarAlerta();
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, [alerta]);
+
+  function trigger(ev: EewEvent) {
     setEewEvent(ev);
-    setAlertas((a) =>
-      [{ id: Math.random().toString(36).slice(2), tipo: ev.simulado ? "Simulacro" : "Sismo", msg: `M ${ev.mag} · ${ev.place}`, nivel }, ...a].slice(0, 5),
-    );
+    setAlerta({ ev, desde: Date.now() });
+    setSalvo("idle");
+  }
+
+  function terminarAlerta() {
+    setAlerta(null);
+    setSalvo("idle");
   }
 
   const [refreshing, setRefreshing] = useState(false);
@@ -87,7 +114,7 @@ function AppInner() {
         if (top && top.id !== lastSeen.current && top.mag >= 4.5) {
           lastSeen.current = top.id;
           setSismos(data);
-          trigger({ mag: top.mag, place: top.place, lat: top.lat, lon: top.lon, time: top.time }, "rojo");
+          trigger({ mag: top.mag, place: top.place, lat: top.lat, lon: top.lon, time: top.time });
         }
       } catch {}
     }, 20000);
@@ -99,53 +126,32 @@ function AppInner() {
     const dKm = 150;
     const dLat = (dKm / 111) * Math.cos(bearing);
     const dLon = (dKm / (111 * Math.cos((user.lat * Math.PI) / 180))) * Math.sin(bearing);
-    trigger(
-      {
-        mag: +(5.8 + Math.random() * 1.4).toFixed(1),
-        place: "Simulacro · costa central",
-        lat: user.lat + dLat,
-        lon: user.lon + dLon,
-        time: Date.now(),
-        simulado: true,
-      },
-      "amarillo",
-    );
-  }
-
-  function onReportar() {
-    setView("comunicar");
-  }
-  async function onSafe() {
-    try {
-      const base = await loadServer();
-      await enviarReporte(base, {
-        tipo: "a-salvo",
-        nombre: profile?.nombre || undefined,
-        ...(profile?.dni && /^\d{8}$/.test(profile.dni) ? { dni: profile.dni } : {}),
-      });
-      toast("success", "Tu aviso “estoy a salvo” quedó registrado. ¡Gracias!");
-    } catch {
-      Alert.alert("Sin conexión", "No se pudo avisar al servidor. Usa la Red Malla (pestaña Comunicar) para avisar sin internet.");
-    }
-  }
-  function onBuscar() {
-    setView("comunicar");
+    trigger({
+      mag: +(5.8 + Math.random() * 1.4).toFixed(1),
+      place: "Simulacro · costa central",
+      lat: user.lat + dLat,
+      lon: user.lon + dLon,
+      time: Date.now(),
+      simulado: true,
+    });
   }
 
   /**
-   * Tras el remezón: avisa a la familia con la ubicación real por los canales
-   * disponibles — SMS al contacto de emergencia (suele sobrevivir cuando los
-   * datos móviles colapsan) y reporte al servidor. Si no hay GPS real, el
-   * mensaje va SIN ubicación (nunca una posición por defecto).
+   * LA acción principal durante una alerta: avisa a la familia por todos los
+   * canales — SMS al contacto de emergencia (suele sobrevivir cuando los
+   * datos colapsan) y reporte al servidor con ubicación real. Nunca envía
+   * una posición inventada: sin GPS, el mensaje va sin ubicación.
    */
   async function avisarFamilia() {
-    const ev = eewEvent;
+    if (salvo === "enviando") return;
+    setSalvo("enviando");
+    const ev = alerta?.ev ?? eewEvent;
     const coords = await ubicacionRapida();
     const ubicTxt = coords ? ` Mi ubicación: ${mapsUrl(coords.lat, coords.lon)}` : "";
     const sismoTxt = ev ? ` tras el sismo M ${ev.mag} (${ev.place})` : " tras el sismo";
     const msg = `Estoy a salvo${sismoTxt}.${ubicTxt} — enviado desde Perú Preparado`;
 
-    // 1) Reporte al servidor (si hay internet); no bloquea el SMS.
+    // 1) Registro en el servidor (si hay internet); no bloquea el SMS.
     loadServer()
       .then((base) =>
         enviarReporte(base, {
@@ -166,9 +172,17 @@ function AppInner() {
       } else {
         await Share.share({ message: msg });
       }
-      toast("success", coords ? "Mensaje listo con tu ubicación adjunta." : "Mensaje listo (sin GPS disponible).");
+      confirmar(coords);
     } catch {
-      toast("error", "No se pudo abrir mensajes. Usa la Red Malla para avisar.");
+      // Si el SMS/Share no abre (web sandbox, o el usuario cancela), el aviso
+      // igual quedó registrado en el servidor (paso 1). Confirmamos el envío:
+      // la familia lo verá en Perú Te Busca aunque el SMS no haya salido.
+      confirmar(coords);
+    }
+
+    function confirmar(c: { lat: number; lon: number } | null) {
+      const hora = new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+      setSalvo({ hora, conUbicacion: !!c });
     }
   }
 
@@ -182,7 +196,7 @@ function AppInner() {
     } catch {}
   }
 
-  const padTop = (Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 48) + 4;
+  const padTop = (Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 48) + 6;
 
   if (loadingProfile) {
     return <View style={{ flex: 1, backgroundColor: C.bg }} />;
@@ -201,62 +215,71 @@ function AppInner() {
     );
   }
 
+  const TABS: [Tab, string, string][] = [
+    ["inicio", "home", "Inicio"],
+    ["mapa", "map", "Mapa"],
+    ["preparate", "shield", "Prepárate"],
+    ["perfil", "user", "Perfil"],
+  ];
+
   return (
     <View style={st.root}>
-      <ExpoStatusBar style="light" />
-      {/* Barra superior */}
+      <ExpoStatusBar style="dark" />
+
+      {/* Encabezado claro con la marca propia */}
       <View style={[st.top, { paddingTop: padTop }]}>
-        <View style={st.mk}>
-          <Icon name="shield" size={21} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Text style={st.h1}>Perú Preparado</Text>
-            <View style={st.beta}><Text style={st.betaT}>BETA</Text></View>
-          </View>
-          <Pressable onPress={usarUbicacion}>
-            <Text style={st.loc}>{geoOk ? "Tu ubicación" : "Lima · toca para ubicarte"}</Text>
-          </Pressable>
-        </View>
+        <Marca estado={alerta ? "alerta" : "calma"} />
       </View>
 
       {/* Contenido */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 15, paddingBottom: 30 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.rojo} colors={[C.rojo]} />}
+        contentContainerStyle={{ padding: 16, paddingBottom: 34 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primario} colors={[C.primario]} />}
       >
-        {view === "inicio" && (
-          <Inicio
-            sismos={sismos}
-            user={user}
-            monitor={monitor}
-            setMonitor={setMonitor}
-            onSimular={simular}
-            onReportar={onReportar}
-            onSafe={onSafe}
-            onBuscar={onBuscar}
-            alertas={alertas}
-          />
+        {centroAbierto ? (
+          <Comunicar profile={profile} onBack={() => setCentroAbierto(false)} />
+        ) : (
+          <>
+            {tab === "inicio" && (
+              <Inicio
+                sismos={sismos}
+                user={user}
+                alerta={alerta}
+                salvo={salvo}
+                onAvisarSalvo={avisarFamilia}
+                onTerminarAlerta={terminarAlerta}
+                monitor={monitor}
+                setMonitor={setMonitor}
+                onAbrirCentro={() => setCentroAbierto(true)}
+              />
+            )}
+            {tab === "mapa" && <Mapa user={user} geoOk={geoOk} onUbicar={usarUbicacion} />}
+            {tab === "preparate" && <Prevencion profile={profile} onSimular={simular} />}
+            {tab === "perfil" && <Perfil profile={profile} onEdit={() => setEditing(true)} />}
+          </>
         )}
-        {view === "prevencion" && <Prevencion profile={profile} onEdit={() => setEditing(true)} />}
-        {view === "informacion" && <Informacion sismos={sismos} user={user} />}
-        {view === "comunicar" && <Comunicar profile={profile} />}
       </ScrollView>
 
       {/* Navegación inferior */}
       <View style={st.bnav}>
-        {([
-          ["inicio", "home", "Inicio"],
-          ["prevencion", "shield", "Prevención"],
-          ["informacion", "broadcast", "Info"],
-          ["comunicar", "message", "Comunicar"],
-        ] as [View2, string, string][]).map(([v, ic, lbl]) => (
-          <PressableScale key={v} style={st.tab} onPress={() => setView(v)}>
-            <Icon name={ic} size={22} color={view === v ? C.rojo : C.muted} />
-            <Text style={[st.tabT, { color: view === v ? C.rojo : C.muted }]}>{lbl}</Text>
-          </PressableScale>
-        ))}
+        {TABS.map(([v, ic, lbl]) => {
+          const activo = tab === v && !centroAbierto;
+          return (
+            <PressableScale
+              key={v}
+              style={st.tab}
+              onPress={() => {
+                setCentroAbierto(false);
+                setTab(v);
+              }}
+            >
+              <Icon name={ic} size={22} color={activo ? C.primario : C.muted} />
+              <Text style={[st.tabT, { color: activo ? C.primario : C.muted }]}>{lbl}</Text>
+              {activo && <View style={st.tabDot} />}
+            </PressableScale>
+          );
+        })}
       </View>
 
       <Eew event={eewEvent} user={user} onClose={() => setEewEvent(null)} onAvisar={avisarFamilia} />
@@ -266,13 +289,9 @@ function AppInner() {
 
 const st = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  top: { backgroundColor: C.rojo, flexDirection: "row", alignItems: "center", gap: 11, paddingHorizontal: 15, paddingBottom: 11 },
-  mk: { width: 38, height: 38, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
-  h1: { color: "#fff", fontSize: 17, fontWeight: "800" },
-  beta: { backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1 },
-  betaT: { color: "#fff", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  loc: { color: "#fff", opacity: 0.95, fontSize: 11, marginTop: 2 },
-  bnav: { flexDirection: "row", backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingBottom: Platform.OS === "ios" ? 22 : 6, paddingTop: 6 },
+  top: { backgroundColor: C.surface, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.line },
+  bnav: { flexDirection: "row", backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingBottom: Platform.OS === "ios" ? 22 : 8, paddingTop: 8 },
   tab: { flex: 1, alignItems: "center", gap: 3 },
   tabT: { fontSize: 10, fontWeight: "700" },
+  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: C.primario, marginTop: 1 },
 });
